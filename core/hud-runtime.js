@@ -1945,6 +1945,8 @@
 
   function scheduleDeferredTopPopoverRender() {
     if (topPopDeferredTimer) return;
+    var now = Date.now();
+    var delayMs = topPopScrollLockUntil > now ? Math.max(40, Math.min(260, (topPopScrollLockUntil - now) + 20)) : 220;
     topPopDeferredTimer = setTimeout(function () {
       topPopDeferredTimer = null;
       if (!topPopoverOpen) return;
@@ -1953,11 +1955,13 @@
         return;
       }
       renderTopPopoverContent(currentDailyUsage);
-    }, 220);
+    }, delayMs);
   }
 
   function scheduleDeferredBottomPopoverRender() {
     if (bottomPopDeferredTimer) return;
+    var now = Date.now();
+    var delayMs = bottomPopScrollLockUntil > now ? Math.max(40, Math.min(260, (bottomPopScrollLockUntil - now) + 20)) : 220;
     bottomPopDeferredTimer = setTimeout(function () {
       bottomPopDeferredTimer = null;
       if (!breakdownOpen) return;
@@ -1966,7 +1970,7 @@
         return;
       }
       renderPopoverContent(currentTelemetry);
-    }, 220);
+    }, delayMs);
   }
 
   function ensurePopoverMounted() {

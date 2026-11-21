@@ -846,7 +846,10 @@ async function main() {
     topPopover.dispatchEvent(new win.Event('wheel', { bubbles: true }));
     win.__AGY_HUD__.updateDaily(daily12Deferred);
     const deferredDuringWheel = !listAfterLivePatch.children[0].textContent.includes('1.55M') && listAfterLivePatch.scrollTop === 185;
-    await delay(520);
+    const wheelDeadline = Date.now() + 900;
+    while (Date.now() < wheelDeadline && !listAfterLivePatch.children[0].textContent.includes('1.55M')) {
+      await delay(40);
+    }
     const flushedAfterWheel = listAfterLivePatch.children[0].textContent.includes('1.55M') && listAfterLivePatch.scrollTop === 185;
     assert(
       deferredDuringWheel && flushedAfterWheel,
