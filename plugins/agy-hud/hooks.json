@@ -1,0 +1,26 @@
+{
+  "agy-hud-telemetry-v1": {
+    "enabled": true,
+    "PreInvocation": [
+      {
+        "type": "command",
+        "command": "node ./scripts/hud-hook.cjs PreInvocation",
+        "timeout": 5
+      }
+    ],
+    "PostInvocation": [
+      {
+        "type": "command",
+        "command": "node ./scripts/hud-hook.cjs PostInvocation",
+        "timeout": 5
+      }
+    ],
+    "Stop": [
+      {
+        "type": "command",
+        "command": "node ./scripts/hud-hook.cjs Stop",
+        "timeout": 5
+      }
+    ]
+  }
+}

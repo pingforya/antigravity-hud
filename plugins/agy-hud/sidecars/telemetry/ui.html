@@ -1,0 +1,2844 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>HUD 遥测与思考链监控</title>
+  <script async src="/preload.js"></script>
+  <style>
+    :root,
+    html[data-theme="dark"] {
+      --agy-font: "Segoe UI Variable Text", "Segoe UI", "Noto Sans SC", "MiSans", "PingFang SC", "HarmonyOS Sans SC", system-ui, sans-serif;
+      --agy-mono: "Cascadia Code", "JetBrains Mono", "Fira Code", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+
+      /* Dark Charcoal / Obsidian Palette (Default) */
+      --agy-bg: #0c0c0e;
+      --agy-card: #141418;
+      --agy-card-subtle: #101013;
+      --agy-card-elev: #1c1c22;
+      --agy-card-active: #222229;
+      --agy-border: rgba(255, 255, 255, 0.08);
+      --agy-border-subtle: rgba(255, 255, 255, 0.05);
+      --agy-border-strong: rgba(255, 255, 255, 0.16);
+      --agy-shadow: 0 8px 24px -4px rgba(0, 0, 0, 0.5), 0 2px 6px -1px rgba(0, 0, 0, 0.35), inset 0 1px 0 0 rgba(255, 255, 255, 0.05);
+      --agy-shadow-sm: 0 2px 6px rgba(0, 0, 0, 0.35);
+
+      --agy-text: #fafafa;
+      --agy-text-sec: #a1a1aa;
+      --agy-muted: #8b8b96;
+      --agy-faint: #71717a;
+
+      --agy-accent: #38bdf8;
+      --agy-accent-bright: #38bdf8;
+      --agy-accent-soft: rgba(56, 189, 248, 0.12);
+      --agy-accent-border: rgba(56, 189, 248, 0.32);
+
+      --agy-green: #10b981;
+      --agy-green-text: #34d399;
+      --agy-green-bg: rgba(16, 185, 129, 0.12);
+      --agy-green-border: rgba(16, 185, 129, 0.28);
+
+      --agy-amber: #f59e0b;
+      --agy-amber-text: #fbbf24;
+      --agy-amber-bg: rgba(245, 158, 11, 0.12);
+      --agy-amber-border: rgba(245, 158, 11, 0.28);
+
+      --agy-rose: #f43f5e;
+      --agy-rose-text: #fb7185;
+      --agy-rose-bg: rgba(244, 63, 94, 0.12);
+      --agy-rose-border: rgba(244, 63, 94, 0.28);
+
+      --agy-track: rgba(255, 255, 255, 0.07);
+      --agy-pre-bg: #080a0f;
+      --agy-pre-text: #e2e8f0;
+
+      --agy-heat-0: rgba(255, 255, 255, 0.03);
+      --agy-heat-1: rgba(56, 189, 248, 0.14);
+      --agy-heat-2: rgba(56, 189, 248, 0.28);
+      --agy-heat-3: rgba(16, 185, 129, 0.38);
+      --agy-heat-4: rgba(16, 185, 129, 0.62);
+
+      /* Map host Sidecar SDK CSS vars so var(--background, #fafafa) resolves to dark canvas */
+      --background: #0c0c0e;
+      --foreground: #f8fafc;
+      color-scheme: dark;
+    }
+
+    html[data-theme="light"] {
+      --agy-bg: #f8fafc;
+      --agy-card: #ffffff;
+      --agy-card-subtle: #f8fafc;
+      --agy-card-elev: #f1f5f9;
+      --agy-card-active: #eef2ff;
+      --agy-border: #e2e8f0;
+      --agy-border-subtle: #f1f5f9;
+      --agy-border-strong: #cbd5e1;
+      --agy-shadow: 0 4px 12px -2px rgba(15, 23, 42, 0.05), 0 1px 3px 0 rgba(15, 23, 42, 0.03);
+      --agy-shadow-sm: 0 1px 2px 0 rgba(15, 23, 42, 0.04);
+
+      --agy-text: #0f172a;
+      --agy-text-sec: #334155;
+      --agy-muted: #64748b;
+      --agy-faint: #94a3b8;
+
+      --agy-accent: #4f46e5;
+      --agy-accent-bright: #4f46e5;
+      --agy-accent-soft: rgba(79, 70, 229, 0.08);
+      --agy-accent-border: rgba(79, 70, 229, 0.28);
+
+      --agy-green: #10b981;
+      --agy-green-text: #047857;
+      --agy-green-bg: #ecfdf5;
+      --agy-green-border: #a7f3d0;
+
+      --agy-amber: #f59e0b;
+      --agy-amber-text: #b45309;
+      --agy-amber-bg: #fffbeb;
+      --agy-amber-border: #fde68a;
+
+      --agy-rose: #f43f5e;
+      --agy-rose-text: #be123c;
+      --agy-rose-bg: #fff1f2;
+      --agy-rose-border: #fecdd3;
+
+      --agy-track: #e2e8f0;
+      --agy-pre-bg: #f8fafc;
+      --agy-pre-text: #1e293b;
+
+      --agy-heat-0: #f1f5f9;
+      --agy-heat-1: #e0f2fe;
+      --agy-heat-2: #bae6fd;
+      --agy-heat-3: #6ee7b7;
+      --agy-heat-4: #34d399;
+
+      --background: #f8fafc;
+      --foreground: #0f172a;
+      color-scheme: light;
+    }
+
+    * {
+      box-sizing: border-box;
+      font-synthesis: none;
+    }
+
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.16);
+      border-radius: 999px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(255, 255, 255, 0.28);
+    }
+
+    html[data-theme="light"] ::-webkit-scrollbar-thumb {
+      background: rgba(15, 23, 42, 0.16);
+    }
+
+    html[data-theme="light"] ::-webkit-scrollbar-thumb:hover {
+      background: rgba(15, 23, 42, 0.30);
+    }
+
+    html,
+    body,
+    body.agy-sidecar-body {
+      margin: 0;
+      padding: 0;
+      background: var(--agy-bg) !important;
+      background-color: var(--agy-bg) !important;
+      color: var(--agy-text) !important;
+      font-family: var(--agy-font) !important;
+      font-synthesis: none;
+      font-size: 12.5px;
+      line-height: 1.55;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      text-rendering: optimizeLegibility;
+    }
+
+    body,
+    body.agy-sidecar-body {
+      padding: 0 !important;
+      transition: background-color 0.18s ease, color 0.18s ease;
+    }
+
+    button {
+      margin: 0;
+      -webkit-appearance: none;
+      appearance: none;
+      font-family: var(--agy-font);
+      font-synthesis: none;
+    }
+
+    .dashboard-shell {
+      max-width: 788px;
+      margin: 0 auto;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .mono {
+      font-family: var(--agy-mono) !important;
+      font-synthesis: none;
+      font-variant-numeric: tabular-nums;
+      font-feature-settings: "tnum" 1, "cv05" 1;
+    }
+
+    /* Top Header Bar */
+    .top-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 10px 14px;
+      background: var(--agy-card);
+      border: 1px solid var(--agy-border);
+      border-radius: 12px;
+      box-shadow: var(--agy-shadow);
+    }
+
+    .brand-cluster {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+    }
+
+    .brand-icon {
+      width: 28px;
+      height: 28px;
+      border-radius: 8px;
+      background: var(--agy-accent-soft);
+      border: 1px solid var(--agy-accent-border);
+      color: var(--agy-accent-bright);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .brand-text-wrap {
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+    }
+
+    .brand-title {
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+      color: var(--agy-text);
+      line-height: 1.25;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .brand-subtitle {
+      font-size: 11px;
+      color: var(--agy-text-sec);
+      line-height: 1.25;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .live-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--agy-green);
+      box-shadow: 0 0 0 3px var(--agy-green-bg);
+      display: inline-block;
+      flex-shrink: 0;
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+
+    .theme-toggle-btn {
+      appearance: none;
+      border: 1px solid var(--agy-border);
+      background: var(--agy-card-elev);
+      color: var(--agy-text-sec);
+      font-family: var(--agy-font);
+      font-size: 11.5px;
+      font-weight: 600;
+      padding: 5px 10px;
+      border-radius: 8px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      box-shadow: var(--agy-shadow-sm);
+      transition: all 0.14s ease;
+    }
+
+    .theme-toggle-btn:hover {
+      border-color: var(--agy-border-strong);
+      color: var(--agy-text);
+    }
+
+    .theme-toggle-btn svg {
+      width: 13px;
+      height: 13px;
+      color: var(--agy-accent-bright);
+      flex-shrink: 0;
+    }
+
+    /* Elevated Card */
+    .card {
+      background: var(--agy-card);
+      border: 1px solid var(--agy-border);
+      border-radius: 12px;
+      padding: 14px 16px;
+      box-shadow: var(--agy-shadow);
+      transition: background-color 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+    }
+
+    .row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 10px;
+    }
+
+    .section-title-group {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+    }
+
+    .section-accent-bar {
+      width: 3px;
+      height: 14px;
+      border-radius: 99px;
+      background: var(--agy-accent);
+      display: inline-block;
+    }
+
+    .section-title {
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+      color: var(--agy-text);
+    }
+
+    /* Badges */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 2.5px 8px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 600;
+      border: 1px solid var(--agy-border);
+      background: var(--agy-card-subtle);
+      color: var(--agy-text-sec);
+      line-height: 1.35;
+    }
+
+    .badge-green {
+      background: var(--agy-green-bg);
+      border-color: var(--agy-green-border);
+      color: var(--agy-green-text);
+    }
+
+    .badge-amber {
+      background: var(--agy-amber-bg);
+      border-color: var(--agy-amber-border);
+      color: var(--agy-amber-text);
+    }
+
+    .badge-indigo {
+      background: var(--agy-accent-soft);
+      border-color: var(--agy-accent-border);
+      color: var(--agy-accent-bright);
+    }
+
+    .badge-rose {
+      background: var(--agy-rose-bg);
+      border-color: var(--agy-rose-border);
+      color: var(--agy-rose-text);
+    }
+
+    /* Session Persona Switcher Card */
+    .persona-card,
+    #persona-card {
+      padding: 12px 16px;
+    }
+
+    .persona-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    #persona-chat-id:empty {
+      display: none;
+    }
+
+    .persona-segmented {
+      display: inline-flex;
+      align-items: center;
+      background: var(--agy-card-subtle);
+      border: 1px solid var(--agy-border);
+      border-radius: 8px;
+      padding: 2px;
+      gap: 2px;
+    }
+
+    .persona-seg-btn {
+      appearance: none;
+      border: 1px solid transparent;
+      background: transparent;
+      color: var(--agy-text-sec);
+      font-family: var(--agy-font);
+      font-synthesis: none;
+      font-size: 11.5px;
+      font-weight: 500;
+      line-height: 1.3;
+      padding: 3.5px 11px;
+      border-radius: 6px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      transition: background-color 0.14s ease, color 0.14s ease, border-color 0.14s ease, box-shadow 0.14s ease, opacity 0.14s ease;
+      white-space: nowrap;
+    }
+
+    .persona-seg-btn svg {
+      width: 12px;
+      height: 12px;
+      flex-shrink: 0;
+      opacity: 0.82;
+      transition: opacity 0.14s ease, color 0.14s ease;
+    }
+
+    .persona-seg-btn[aria-pressed="false"]:hover:not(:disabled) {
+      color: var(--agy-text);
+    }
+
+    .persona-seg-btn[aria-pressed="false"]:hover:not(:disabled) svg {
+      opacity: 1;
+    }
+
+    .persona-seg-btn[aria-pressed="true"] {
+      background: var(--agy-card-elev);
+      color: var(--agy-accent-bright);
+      border-color: var(--agy-accent-border);
+      font-weight: 600;
+      box-shadow: var(--agy-shadow-sm);
+    }
+
+    .persona-seg-btn[aria-pressed="true"] svg {
+      opacity: 1;
+    }
+
+    .persona-seg-btn:disabled {
+      opacity: 0.45;
+      cursor: default;
+    }
+
+    .persona-status,
+    #persona-status {
+      font-size: 11px;
+      color: var(--agy-muted);
+      margin: 8px 0 0;
+      padding-top: 7px;
+      border-top: 1px solid var(--agy-border-subtle);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      line-height: 1.4;
+    }
+
+    #persona-status::before {
+      content: "";
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: var(--agy-muted);
+      opacity: 0.7;
+      flex-shrink: 0;
+    }
+
+    #persona-status[data-tone="ready"]::before {
+      background: var(--agy-accent);
+      opacity: 0.9;
+    }
+
+    #persona-status[data-tone="error"] {
+      color: var(--agy-rose-text);
+    }
+
+    #persona-status[data-tone="error"]::before {
+      background: var(--agy-rose);
+      opacity: 0.95;
+    }
+
+    /* Segmented 3-Page Scope Switcher (单日 | 7 日 | 总计) */
+    .scope-tabs {
+      display: inline-flex;
+      background: var(--agy-card-subtle);
+      border: 1px solid var(--agy-border);
+      border-radius: 8px;
+      padding: 2px;
+      gap: 2px;
+    }
+
+    .scope-tab {
+      appearance: none;
+      border: 0;
+      background: transparent;
+      color: var(--agy-text-sec);
+      font-family: var(--agy-font);
+      font-synthesis: none;
+      font-size: 11.5px;
+      font-weight: 500;
+      padding: 3.5px 11px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.14s ease;
+      white-space: nowrap;
+    }
+
+    .scope-tab:hover {
+      color: var(--agy-text);
+    }
+
+    .scope-tab.active {
+      background: var(--agy-card-elev);
+      color: var(--agy-accent-bright);
+      font-weight: 600;
+      box-shadow: var(--agy-shadow-sm);
+    }
+
+    /* Three-Page Containers */
+    .view-page {
+      display: none;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .view-page.active {
+      display: flex;
+    }
+
+    /* Stepper & Lifecycle Control Bar */
+    .view-control-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      flex-wrap: wrap;
+      padding: 7px 10px;
+      background: var(--agy-card-subtle);
+      border: 1px solid var(--agy-border);
+      border-radius: 9px;
+    }
+
+    .stepper-cluster {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      flex-wrap: wrap;
+    }
+
+    .stepper-btn {
+      appearance: none;
+      border: 1px solid var(--agy-border);
+      background: var(--agy-card-elev);
+      color: var(--agy-text);
+      font-size: 12px;
+      font-weight: 600;
+      line-height: 1;
+      min-width: 24px;
+      height: 24px;
+      padding: 0 6px;
+      border-radius: 6px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.12s ease;
+    }
+
+    .stepper-btn-text {
+      font-size: 11px;
+      font-weight: 500;
+      padding: 0 8px;
+    }
+
+    .stepper-btn:hover:not(:disabled) {
+      border-color: var(--agy-border-strong);
+      background: var(--agy-card-active);
+      color: var(--agy-accent-bright);
+    }
+
+    .stepper-btn:disabled {
+      opacity: 0.35;
+      cursor: default;
+    }
+
+    .stepper-date {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--agy-text);
+      padding: 0 6px;
+      min-width: 88px;
+      text-align: center;
+      white-space: nowrap;
+    }
+
+    .stepper-reset-btn {
+      appearance: none;
+      border: 1px solid var(--agy-accent-border);
+      background: var(--agy-accent-soft);
+      color: var(--agy-accent-bright);
+      font-size: 11px;
+      font-weight: 600;
+      height: 24px;
+      padding: 0 9px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.12s ease;
+      white-space: nowrap;
+    }
+
+    .stepper-reset-btn:hover:not(:disabled) {
+      background: var(--agy-card-active);
+      border-color: var(--agy-accent-bright);
+    }
+
+    .stepper-reset-btn:disabled {
+      opacity: 0.4;
+      border-color: var(--agy-border);
+      background: transparent;
+      color: var(--agy-muted);
+      cursor: default;
+    }
+
+    .stepper-meta {
+      font-size: 11px;
+      color: var(--agy-text-sec);
+      white-space: nowrap;
+    }
+
+    .lifecycle-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 3px 10px;
+      border-radius: 6px;
+      background: var(--agy-accent-soft);
+      border: 1px solid var(--agy-accent-border);
+      color: var(--agy-accent-bright);
+      font-size: 11.5px;
+      font-weight: 600;
+    }
+
+    /* Non-Clickable View-Specific KPI Display Cards */
+    .kpi-grid-3 {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .kpi-grid-4 {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .kpi-card {
+      position: relative;
+      background: var(--agy-card-subtle);
+      border: 1px solid var(--agy-border);
+      border-radius: 10px;
+      padding: 10px 12px;
+      cursor: default;
+      user-select: none;
+      overflow: hidden;
+    }
+
+    .kpi-card-label {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 4px;
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--agy-text-sec);
+      margin-bottom: 4px;
+      white-space: nowrap;
+    }
+
+    .kpi-card-tag {
+      font-size: 10px;
+      color: var(--agy-muted);
+    }
+
+    .kpi-card-val {
+      font-size: 15.5px;
+      font-weight: 600;
+      color: var(--agy-text);
+      line-height: 1.25;
+      letter-spacing: -0.02em;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .kpi-card-meta {
+      font-size: 10.5px;
+      color: var(--agy-muted);
+      margin-top: 4px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* Sub-summary Strip */
+    .daily-summary-banner {
+      padding: 8px 11px;
+      border-radius: 8px;
+      background: var(--agy-card-subtle);
+      border: 1px solid var(--agy-border-subtle);
+      font-size: 11.5px;
+      color: var(--agy-text-sec);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    /* 7-Day Bar Chart Panel */
+    .trend-panel {
+      padding: 10px 12px;
+      background: var(--agy-card-subtle);
+      border: 1px solid var(--agy-border);
+      border-radius: 10px;
+    }
+
+    .trend-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--agy-text-sec);
+      margin-bottom: 8px;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .trend-grid {
+      display: grid;
+      grid-template-columns: repeat(7, minmax(0, 1fr));
+      gap: 6px;
+      align-items: end;
+      height: 72px;
+    }
+
+    .trend-col {
+      -webkit-appearance: none;
+      appearance: none;
+      margin: 0;
+      line-height: 1;
+      background: transparent;
+      color: inherit;
+      font-family: inherit;
+      width: 100%;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-end;
+      height: 100%;
+      cursor: pointer;
+      padding: 4px 2px;
+      border-radius: 6px;
+      border: 1px solid transparent;
+      transition: all 0.14s ease;
+    }
+
+    .trend-col:hover {
+      background: var(--agy-card-elev);
+    }
+
+    .trend-col.selected {
+      background: var(--agy-accent-soft);
+      border-color: var(--agy-accent-border);
+    }
+
+    .trend-val {
+      font-size: 9.5px;
+      color: var(--agy-muted);
+      margin-bottom: 3px;
+      line-height: 1;
+      white-space: nowrap;
+      max-width: 100%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .trend-col.selected .trend-val,
+    .trend-col.is-today .trend-val {
+      color: var(--agy-text);
+      font-weight: 600;
+    }
+
+    .trend-bar-track {
+      width: 100%;
+      max-width: 24px;
+      height: 34px;
+      flex-shrink: 0;
+      background: var(--agy-track);
+      border-radius: 4px;
+      display: flex;
+      align-items: flex-end;
+      overflow: hidden;
+      padding: 0;
+    }
+
+    .trend-bar-fill {
+      width: 100%;
+      border-radius: 4px 4px 0 0;
+      min-height: 3px;
+      transition: height 0.22s ease;
+    }
+
+    .trend-date {
+      font-size: 10px;
+      color: var(--agy-text-sec);
+      margin-top: 4px;
+      line-height: 1;
+      max-width: 100%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .trend-col.is-today .trend-date {
+      color: var(--agy-accent-bright);
+      font-weight: 600;
+    }
+
+    /* 4-Week x 7-Day (28-Day) Activity Heatmap Matrix */
+    .heatmap-panel {
+      padding: 10px 12px;
+      background: var(--agy-card-subtle);
+      border: 1px solid var(--agy-border);
+      border-radius: 10px;
+    }
+
+    .heatmap-legend {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 10px;
+      color: var(--agy-muted);
+    }
+
+    .heatmap-swatch {
+      width: 10px;
+      height: 10px;
+      border-radius: 3px;
+      border: 1px solid var(--agy-border);
+      display: inline-block;
+    }
+
+    .heatmap-matrix {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+
+    .heatmap-row {
+      display: grid;
+      grid-template-columns: 78px repeat(7, minmax(0, 1fr));
+      gap: 5px;
+      align-items: center;
+    }
+
+    .heatmap-week-label {
+      font-size: 10px;
+      color: var(--agy-muted);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .heatmap-cell {
+      -webkit-appearance: none;
+      appearance: none;
+      margin: 0;
+      font-family: inherit;
+      color: inherit;
+      background: var(--agy-heat-0);
+      line-height: 1.1;
+      width: 100%;
+      min-width: 0;
+      overflow: hidden;
+      border-radius: 6px;
+      padding: 4px 2px;
+      min-height: 34px;
+      border: 1px solid var(--agy-border-subtle);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 1px;
+      cursor: pointer;
+      transition: transform 0.12s ease, border-color 0.12s ease;
+    }
+
+    .heatmap-cell:hover {
+      border-color: var(--agy-accent-bright);
+      transform: translateY(-1px);
+    }
+
+    .heatmap-cell.is-today {
+      border-color: var(--agy-accent-border);
+    }
+
+    .heatmap-cell.level-0 { background: var(--agy-heat-0); }
+    .heatmap-cell.level-1 { background: var(--agy-heat-1); }
+    .heatmap-cell.level-2 { background: var(--agy-heat-2); }
+    .heatmap-cell.level-3 { background: var(--agy-heat-3); }
+    .heatmap-cell.level-4 { background: var(--agy-heat-4); }
+
+    .heatmap-cell-date {
+      font-size: 9px;
+      color: var(--agy-text-sec);
+      line-height: 1.1;
+      display: block;
+      max-width: 100%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .heatmap-cell-val {
+      font-size: 9.5px;
+      font-weight: 600;
+      color: var(--agy-text);
+      line-height: 1.1;
+      display: block;
+      max-width: 100%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .heatmap-cell.level-0 .heatmap-cell-val {
+      color: var(--agy-faint);
+      font-weight: 400;
+    }
+
+    html[data-theme="light"] .heatmap-cell.level-4 .heatmap-cell-date {
+      color: #064e3b;
+    }
+
+    html[data-theme="light"] .heatmap-cell.level-4 .heatmap-cell-val {
+      color: #022c22;
+    }
+
+    /* Per-Model Breakdown Cards */
+    .models-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .model-row {
+      padding: 10px 12px;
+      background: var(--agy-card-subtle);
+      border: 1px solid var(--agy-border);
+      border-radius: 9px;
+      transition: border-color 0.14s ease, background-color 0.14s ease;
+    }
+
+    .model-row:hover {
+      border-color: var(--agy-border-strong);
+      background: var(--agy-card-elev);
+    }
+
+    .model-row-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 8px;
+      row-gap: 4px;
+      font-size: 12px;
+    }
+
+    .model-name-wrap {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      font-weight: 500;
+      color: var(--agy-text);
+      flex: 1 1 130px;
+      min-width: 0;
+    }
+
+    .model-name-text {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      min-width: 0;
+    }
+
+    .model-rank-badge {
+      font-size: 10px;
+      font-weight: 600;
+      padding: 1px 5px;
+      border-radius: 4px;
+      background: var(--agy-accent-soft);
+      color: var(--agy-accent-bright);
+      flex-shrink: 0;
+    }
+
+    .model-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      box-shadow: 0 0 0 2px var(--agy-border);
+    }
+
+    .model-stats-right {
+      display: inline-flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 6px;
+      font-size: 11.5px;
+      color: var(--agy-text-sec);
+      flex-shrink: 0;
+      max-width: 100%;
+    }
+
+    .model-stats-right strong {
+      font-size: 12.5px;
+      font-weight: 600;
+      color: var(--agy-text);
+    }
+
+    .model-sub-meta {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      font-size: 10.5px;
+      color: var(--agy-muted);
+      margin-top: 5px;
+      flex-wrap: wrap;
+    }
+
+    /* Progress Bars */
+    .bar-bg {
+      width: 100%;
+      height: 8px;
+      background: var(--agy-track);
+      border-radius: 99px;
+      overflow: hidden;
+      margin: 10px 0;
+      display: flex;
+    }
+
+    .bar-cache {
+      background: var(--agy-green);
+      height: 100%;
+      transition: width 0.25s ease;
+    }
+
+    .bar-new {
+      background: var(--agy-amber);
+      height: 100%;
+      transition: width 0.25s ease;
+    }
+
+    .ctx-metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    .ctx-metric-item {
+      background: var(--agy-card-subtle);
+      border: 1px solid var(--agy-border);
+      border-radius: 8px;
+      padding: 7px 10px;
+      font-size: 11.5px;
+      color: var(--agy-text-sec);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px;
+    }
+
+    /* Top Consumers List */
+    .consumers-container {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      margin-top: 6px;
+    }
+
+    .consumer-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 7px 10px;
+      background: var(--agy-card-subtle);
+      border: 1px solid var(--agy-border);
+      border-radius: 8px;
+      font-size: 11.5px;
+      transition: border-color 0.14s ease, background-color 0.14s ease;
+    }
+
+    .consumer-item:hover {
+      border-color: var(--agy-border-strong);
+      background: var(--agy-card-elev);
+    }
+
+    .consumer-left {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 0;
+      color: var(--agy-text);
+    }
+
+    .consumer-rank {
+      width: 18px;
+      height: 18px;
+      border-radius: 5px;
+      background: var(--agy-accent-soft);
+      color: var(--agy-accent-bright);
+      font-size: 10.5px;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .consumer-label {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .consumer-delta {
+      color: var(--agy-amber-text);
+      background: var(--agy-amber-bg);
+      border: 1px solid var(--agy-amber-border);
+      padding: 1.5px 7px;
+      border-radius: 5px;
+      font-weight: 600;
+      font-size: 11px;
+      flex-shrink: 0;
+    }
+
+    /* Thinking Chain Inspector */
+    details {
+      background: var(--agy-card-subtle);
+      border: 1px solid var(--agy-border);
+      border-radius: 9px;
+      padding: 9px 12px;
+      margin-bottom: 8px;
+      transition: border-color 0.15s ease, background-color 0.15s ease;
+    }
+
+    details[open] {
+      background: var(--agy-card-elev);
+      border-color: var(--agy-border-strong);
+      box-shadow: var(--agy-shadow-sm);
+    }
+
+    details:last-child {
+      margin-bottom: 0;
+    }
+
+    summary {
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 12px;
+      color: var(--agy-text);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      list-style: none;
+    }
+
+    summary::-webkit-details-marker {
+      display: none;
+    }
+
+    .summary-left {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+    }
+
+    .summary-chevron {
+      flex-shrink: 0;
+      display: block;
+      color: var(--agy-accent-bright);
+      transition: transform 0.15s ease;
+    }
+
+    details[open] .summary-chevron {
+      transform: rotate(90deg);
+    }
+
+    .summary-meta {
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--agy-text-sec);
+    }
+
+    pre {
+      white-space: pre-wrap;
+      word-break: break-word;
+      background: var(--agy-pre-bg);
+      border: 1px solid var(--agy-border);
+      border-radius: 8px;
+      padding: 10px 12px;
+      margin: 9px 0 0;
+      font-family: var(--agy-mono) !important;
+      font-size: 11.5px;
+      line-height: 1.6;
+      color: var(--agy-pre-text);
+    }
+
+    .empty-state {
+      padding: 14px;
+      text-align: center;
+      color: var(--agy-muted);
+      font-size: 11.5px;
+      background: var(--agy-card-subtle);
+      border: 1px dashed var(--agy-border);
+      border-radius: 8px;
+    }
+
+    .theme-toggle-btn:focus-visible,
+    .persona-seg-btn:focus-visible,
+    .scope-tab:focus-visible,
+    .stepper-btn:focus-visible,
+    .stepper-reset-btn:focus-visible,
+    .trend-col:focus-visible,
+    .heatmap-cell:focus-visible,
+    summary:focus-visible {
+      outline: 2px solid var(--agy-accent-bright);
+      outline-offset: 2px;
+    }
+
+    @media (max-width: 640px) {
+      .kpi-grid-4 {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 480px) {
+      .kpi-grid-3 {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+      .kpi-grid-3 > .kpi-card:first-child {
+        grid-column: 1 / -1;
+      }
+      .ctx-metrics-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 440px) {
+      .heatmap-row {
+        grid-template-columns: 52px repeat(7, minmax(0, 1fr));
+        gap: 3px;
+      }
+      .heatmap-week-label {
+        font-size: 9px;
+      }
+      .heatmap-cell {
+        padding: 3px 1px;
+        min-height: 30px;
+        border-radius: 5px;
+      }
+      .heatmap-cell-date {
+        font-size: 8.5px;
+      }
+      .heatmap-cell-val {
+        font-size: 8.5px;
+      }
+      .hm-mm {
+        display: none;
+      }
+    }
+
+    @media (max-width: 420px) {
+      .dashboard-shell {
+        padding: 10px;
+      }
+      .card,
+      .persona-card,
+      #persona-card {
+        padding: 11px 12px;
+      }
+      .top-header {
+        padding: 9px 11px;
+      }
+    }
+
+    @media (max-width: 300px) {
+      .kpi-grid-3,
+      .kpi-grid-4 {
+        grid-template-columns: 1fr;
+      }
+      .kpi-grid-3 > .kpi-card:first-child {
+        grid-column: auto;
+      }
+    }
+  </style>
+</head>
+<body class="agy-sidecar-body">
+  <div class="dashboard-shell">
+    <!-- Top Header with Brand & Dark/Light Toggle (Default: Dark) -->
+    <header class="top-header">
+      <div class="brand-cluster">
+        <div class="brand-icon" aria-hidden="true">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 3v18h18" />
+            <path d="M7 16l4-5 4 3 5-7" />
+          </svg>
+        </div>
+        <div class="brand-text-wrap">
+          <div class="brand-title">
+            <span>HUD 遥测与思考链分析</span>
+            <span class="live-dot" title="实时遥测流已连接"></span>
+          </div>
+          <div id="header-conv-meta" class="brand-subtitle mono">正在同步实时会话指标...</div>
+        </div>
+      </div>
+      <div class="header-actions">
+        <button type="button" id="theme-toggle-btn" class="theme-toggle-btn" title="切换深色 / 浅色外观">
+          <svg id="theme-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+          </svg>
+          <span id="theme-toggle-label">深色</span>
+        </button>
+      </div>
+    </header>
+
+    <section class="card" id="persona-card">
+      <div class="persona-header">
+        <div class="section-title-group">
+          <span class="section-accent-bar"></span>
+          <span class="section-title">当前会话角色</span>
+          <span id="persona-chat-id" class="badge mono"></span>
+        </div>
+        <div class="persona-segmented" role="group" aria-label="当前会话角色">
+          <button type="button" id="persona-hakimi" class="persona-seg-btn" aria-pressed="false" disabled>
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M3.2 2.6L2.5 8.8C2.5 11.7 4.9 13.5 8 13.5C11.1 13.5 13.5 11.7 13.5 8.8L12.8 2.6L10.1 5.3C9.4 5.1 8.7 5 8 5C7.3 5 6.6 5.1 5.9 5.3Z" />
+            </svg>
+            <span>哈基米</span>
+          </button>
+          <button type="button" id="persona-normal" class="persona-seg-btn" aria-pressed="false" disabled>
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <rect x="2.25" y="3" width="11.5" height="10" rx="2.2" />
+              <path d="M5.2 6.5L7.2 8.2L5.2 9.9M8.6 10H10.8" />
+            </svg>
+            <span>正常助手</span>
+          </button>
+        </div>
+      </div>
+      <p id="persona-status" class="persona-status" role="status">正在同步当前会话角色…</p>
+    </section>
+
+    <!-- Card 1: Three-Page Token Usage Architecture (单日 | 7 日 | 总计) -->
+    <section class="card" id="token-usage-card">
+      <div class="section-header">
+        <div class="section-title-group">
+          <span class="section-accent-bar"></span>
+          <span class="section-title">模型 Token 消耗统计</span>
+        </div>
+        <div class="row" style="gap: 6px;">
+          <div class="scope-tabs" role="tablist" aria-label="统计视图切换">
+            <button type="button" id="scope-tab-day" class="scope-tab active" role="tab" aria-selected="true" tabindex="0" aria-controls="view-page-day" data-scope="day">单日</button>
+            <button type="button" id="scope-tab-week" class="scope-tab" role="tab" aria-selected="false" tabindex="-1" aria-controls="view-page-week" data-scope="week">7 日</button>
+            <button type="button" id="scope-tab-total" class="scope-tab" role="tab" aria-selected="false" tabindex="-1" aria-controls="view-page-total" data-scope="total">总计</button>
+          </div>
+          <span id="daily-total-badge" class="mono badge badge-indigo">加载中...</span>
+        </div>
+      </div>
+
+      <!-- ==================== PAGE 1: 单日视图 (day) ==================== -->
+      <div class="view-page active" id="view-page-day" data-view-page="day" role="tabpanel" aria-labelledby="scope-tab-day">
+        <!-- Single-Day Stepper Bar -->
+        <div class="view-control-bar">
+          <div class="stepper-cluster">
+            <button type="button" class="stepper-btn mono" id="day-prev-btn" data-day-nav="prev" title="前一天" aria-label="前一天">‹</button>
+            <span id="day-stepper-label" class="stepper-date mono">----/--/--</span>
+            <button type="button" class="stepper-btn mono" id="day-next-btn" data-day-nav="next" title="后一天" aria-label="后一天" disabled>›</button>
+            <button type="button" class="stepper-reset-btn" id="day-today-btn" data-day-nav="today" disabled>回今日</button>
+          </div>
+          <span id="day-stepper-meta" class="stepper-meta mono">--</span>
+        </div>
+
+        <!-- 3 Non-Clickable Daily KPI Cards -->
+        <div class="kpi-grid-3" id="day-kpi-strip">
+          <div class="kpi-card">
+            <div class="kpi-card-label">
+              <span>当日总消耗</span>
+              <span id="day-kpi-total-tag" class="kpi-card-tag mono">--</span>
+            </div>
+            <div id="day-kpi-total-val" class="kpi-card-val mono">--</div>
+            <div id="day-kpi-total-meta" class="kpi-card-meta mono">--</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-card-label">
+              <span>缓存命中率</span>
+              <span id="day-kpi-cache-tag" class="kpi-card-tag mono">--</span>
+            </div>
+            <div id="day-kpi-cache-val" class="kpi-card-val mono">--</div>
+            <div id="day-kpi-cache-meta" class="kpi-card-meta mono">--</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-card-label">
+              <span>输出与思考</span>
+              <span id="day-kpi-out-tag" class="kpi-card-tag mono">--</span>
+            </div>
+            <div id="day-kpi-out-val" class="kpi-card-val mono">--</div>
+            <div id="day-kpi-out-meta" class="kpi-card-meta mono">--</div>
+          </div>
+        </div>
+
+        <!-- 7-Day Quick Bar Selector -->
+        <div class="trend-panel" id="daily-trend-panel">
+          <div class="trend-header">
+            <span id="day-trend-title">近 7 日快速切换 (点击单日柱体切换该日明细)</span>
+            <span id="trend-peak-label" class="mono">--</span>
+          </div>
+          <div class="trend-grid" id="daily-trend-chart"></div>
+        </div>
+
+        <!-- Selected Day Sub-Summary & Model Breakdown -->
+        <div id="day-sub-text" class="daily-summary-banner mono">--</div>
+        <div id="day-models-list" class="models-list"></div>
+      </div>
+
+      <!-- ==================== PAGE 2: 7 日区间视图 (week) ==================== -->
+      <div class="view-page" id="view-page-week" data-view-page="week" role="tabpanel" aria-labelledby="scope-tab-week">
+        <!-- 7-Day Interval Stepper Bar -->
+        <div class="view-control-bar">
+          <div class="stepper-cluster">
+            <button type="button" class="stepper-btn stepper-btn-text" id="week-prev-btn" data-week-nav="prev" title="往前翻一个七日区间" aria-label="往前翻一个七日区间">‹ 上七日</button>
+            <span id="week-stepper-label" class="stepper-date mono">-- ~ --</span>
+            <button type="button" class="stepper-btn stepper-btn-text" id="week-next-btn" data-week-nav="next" title="往后翻一个七日区间" aria-label="往后翻一个七日区间" disabled>下七日 ›</button>
+            <button type="button" class="stepper-reset-btn" id="week-reset-btn" data-week-nav="reset" disabled>回本七日</button>
+          </div>
+          <span id="week-stepper-meta" class="stepper-meta mono">--</span>
+        </div>
+
+        <!-- 3 Non-Clickable 7-Day Interval KPI Cards -->
+        <div class="kpi-grid-3" id="week-kpi-strip">
+          <div class="kpi-card">
+            <div class="kpi-card-label">
+              <span>七日区间总消耗</span>
+              <span id="week-kpi-total-tag" class="kpi-card-tag mono">--</span>
+            </div>
+            <div id="week-kpi-total-val" class="kpi-card-val mono">--</div>
+            <div id="week-kpi-total-meta" class="kpi-card-meta mono">--</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-card-label">
+              <span>区间日均与峰值</span>
+              <span id="week-kpi-peak-tag" class="kpi-card-tag mono">--</span>
+            </div>
+            <div id="week-kpi-peak-val" class="kpi-card-val mono">--</div>
+            <div id="week-kpi-peak-meta" class="kpi-card-meta mono">--</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-card-label">
+              <span>区间缓存与输出</span>
+              <span id="week-kpi-cache-tag" class="kpi-card-tag mono">--</span>
+            </div>
+            <div id="week-kpi-cache-val" class="kpi-card-val mono">--</div>
+            <div id="week-kpi-cache-meta" class="kpi-card-meta mono">--</div>
+          </div>
+        </div>
+
+        <!-- 7-Day Bar Chart for That Interval -->
+        <div class="trend-panel" id="week-trend-panel">
+          <div class="trend-header">
+            <span id="week-trend-title">七日区间每日分布 (点击柱体可下钻单日视图)</span>
+            <span id="week-trend-peak-label" class="mono">--</span>
+          </div>
+          <div class="trend-grid" id="week-trend-chart"></div>
+        </div>
+
+        <!-- 7-Day Interval Aggregated Model Breakdown -->
+        <div id="week-sub-text" class="daily-summary-banner mono">--</div>
+        <div id="week-models-list" class="models-list"></div>
+      </div>
+
+      <!-- ==================== PAGE 3: 总计成熟总览看板 (total) ==================== -->
+      <div class="view-page" id="view-page-total" data-view-page="total" role="tabpanel" aria-labelledby="scope-tab-total">
+        <!-- Lifecycle Span Badge Bar -->
+        <div class="view-control-bar">
+          <span class="lifecycle-pill mono" id="total-lifecycle-badge">首日 ~ 今日 · 活跃 0 天</span>
+          <span id="total-lifecycle-meta" class="stepper-meta mono">--</span>
+        </div>
+
+        <!-- 4 Non-Clickable All-Time KPI Cards -->
+        <div class="kpi-grid-4" id="total-kpi-strip">
+          <div class="kpi-card">
+            <div class="kpi-card-label">
+              <span>历史累计总消耗</span>
+              <span id="total-kpi-sum-tag" class="kpi-card-tag mono">--</span>
+            </div>
+            <div id="total-kpi-sum-val" class="kpi-card-val mono">--</div>
+            <div id="total-kpi-sum-meta" class="kpi-card-meta mono">--</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-card-label">
+              <span>历史最高单日</span>
+              <span id="total-kpi-peak-tag" class="kpi-card-tag mono">--</span>
+            </div>
+            <div id="total-kpi-peak-val" class="kpi-card-val mono">--</div>
+            <div id="total-kpi-peak-meta" class="kpi-card-meta mono">--</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-card-label">
+              <span>全局缓存命中率</span>
+              <span id="total-kpi-cache-tag" class="kpi-card-tag mono">--</span>
+            </div>
+            <div id="total-kpi-cache-val" class="kpi-card-val mono">--</div>
+            <div id="total-kpi-cache-meta" class="kpi-card-meta mono">--</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-card-label">
+              <span>累计输出与思考</span>
+              <span id="total-kpi-out-tag" class="kpi-card-tag mono">--</span>
+            </div>
+            <div id="total-kpi-out-val" class="kpi-card-val mono">--</div>
+            <div id="total-kpi-out-meta" class="kpi-card-meta mono">--</div>
+          </div>
+        </div>
+
+        <!-- 4-Week x 7-Day (28-Day) Activity Heatmap Matrix -->
+        <div class="heatmap-panel" id="total-heatmap-panel">
+          <div class="trend-header">
+            <span>近 28 日活跃热力矩阵 (4 周 × 7 天 · 点击单元格可下钻单日)</span>
+            <span class="heatmap-legend mono">
+              <span>低</span>
+              <span class="heatmap-swatch" style="background: var(--agy-heat-0);"></span>
+              <span class="heatmap-swatch" style="background: var(--agy-heat-1);"></span>
+              <span class="heatmap-swatch" style="background: var(--agy-heat-2);"></span>
+              <span class="heatmap-swatch" style="background: var(--agy-heat-3);"></span>
+              <span class="heatmap-swatch" style="background: var(--agy-heat-4);"></span>
+              <span>高</span>
+            </span>
+          </div>
+          <div class="heatmap-matrix" id="total-heatmap-matrix"></div>
+        </div>
+
+        <!-- All-Time Model Leaderboard -->
+        <div id="total-sub-text" class="daily-summary-banner mono">--</div>
+        <div id="total-models-list" class="models-list"></div>
+      </div>
+    </section>
+
+    <!-- Card 2: Current Session Context Water Level -->
+    <section class="card">
+      <div class="section-header" style="margin-bottom: 6px;">
+        <div class="section-title-group">
+          <span class="section-accent-bar"></span>
+          <span class="section-title">当前上下文水位</span>
+        </div>
+        <span id="ctx-text" class="mono badge badge-green">加载中...</span>
+      </div>
+
+      <div class="bar-bg" title="绿色: 缓存命中 Token | 琥珀色: 本轮新增输入 Token">
+        <div id="bar-cache" class="bar-cache" style="width: 0%"></div>
+        <div id="bar-new" class="bar-new" style="width: 0%"></div>
+      </div>
+
+      <div class="row mono" style="font-size: 11.5px; color: var(--agy-text-sec);">
+        <span id="cache-text">缓存命中: --</span>
+        <span id="speed-text" class="badge badge-indigo">速率: -- tok/s</span>
+      </div>
+
+      <div class="ctx-metrics-grid mono">
+        <div class="ctx-metric-item">
+          <span id="total-text">会话累计: --</span>
+        </div>
+        <div class="ctx-metric-item">
+          <span id="total-detail">新增 -- · 缓存 -- · 输出 --</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Card 3: Top Context Consumers -->
+    <section class="card">
+      <div class="section-header" style="margin-bottom: 6px;">
+        <div class="section-title-group">
+          <span class="section-accent-bar"></span>
+          <span class="section-title">上下文消耗排行</span>
+        </div>
+        <span class="badge mono" id="consumers-count-badge">Top 步骤</span>
+      </div>
+      <div id="consumers-list" class="consumers-container"></div>
+    </section>
+
+    <!-- Card 4: Real-time Thinking Chain Inspector -->
+    <section class="card">
+      <div class="section-header" style="margin-bottom: 6px;">
+        <div class="section-title-group">
+          <span class="section-accent-bar"></span>
+          <span class="section-title">实时思考链记录</span>
+        </div>
+        <span class="badge mono" id="thinking-count-badge">最新推理</span>
+      </div>
+      <div id="thinking-list" style="margin-top: 6px;"></div>
+    </section>
+  </div>
+
+  <script>
+    const THEME_STORAGE_KEY = 'agy_hud_theme_v2';
+    const LEGACY_THEME_STORAGE_KEY = 'agy_hud_sidecar_theme_v2';
+    const params = new URLSearchParams(location.search);
+    const convId = params.get('conversationId') || '';
+
+    // The exact host-supplied conversation ID is required; never guess the latest chat.
+    // [TEST-SLICE-START: test/persona-mode.test.cjs]
+    const personaButtons = {
+      hakimi: document.getElementById('persona-hakimi'),
+      normal: document.getElementById('persona-normal')
+    };
+    const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    const getSidecarToken = () => (typeof location !== 'undefined' && location.search)
+      ? (new URLSearchParams(location.search).get('token') || '')
+      : '';
+    const personaStatus = document.getElementById('persona-status');
+    function showPersona(mode) {
+      for (const [key, button] of Object.entries(personaButtons)) {
+        button.disabled = false;
+        button.setAttribute('aria-pressed', String(mode === key));
+      }
+      personaStatus.dataset.tone = 'ready';
+      personaStatus.textContent = (mode === 'hakimi' ? '当前：哈基米' : '当前：正常助手') + ' · 仅作用于本会话，下一次模型调用生效';
+    }
+    async function loadPersona() {
+      if (!UUID_RE.test(convId)) {
+        personaStatus.dataset.tone = 'muted';
+        personaStatus.textContent = '请从目标会话右侧「扩展插件」打开 HUD 面板以切换角色。';
+        return;
+      }
+      document.getElementById('persona-chat-id').textContent = '#' + convId.slice(0, 8);
+      try {
+        const tok = getSidecarToken();
+        const getOpts = tok
+          ? { cache: 'no-store', headers: { 'X-Sidecar-Token': tok } }
+          : { cache: 'no-store' };
+        const response = await fetch('/api/persona?conversationId=' + encodeURIComponent(convId), getOpts);
+        let data = null;
+        try { data = await response.json(); } catch (_) {}
+        if (!response.ok) throw Error((data && data.error) || (response.status ? 'HTTP ' + response.status : '读取失败'));
+        if (!data) throw Error('读取失败');
+        showPersona(data.mode);
+      } catch (error) {
+        Object.values(personaButtons).forEach((b) => {
+          b.disabled = false;
+          b.setAttribute('aria-pressed', 'false');
+        });
+        personaStatus.dataset.tone = 'error';
+        personaStatus.textContent = '读取失败：' + error.message + '（点击上方任一模式可重写修复）';
+      }
+    }
+    for (const [mode, button] of Object.entries(personaButtons)) {
+      button.addEventListener('click', async () => {
+        Object.values(personaButtons).forEach((b) => { b.disabled = true; });
+        personaStatus.dataset.tone = 'muted';
+        personaStatus.textContent = '正在保存…';
+        try {
+          const tok = getSidecarToken();
+          const reqHeaders = { 'Content-Type': 'application/json', 'X-AGY-Persona': '1' };
+          if (tok) reqHeaders['X-Sidecar-Token'] = tok;
+          const response = await fetch('/api/persona?conversationId=' + encodeURIComponent(convId), {
+            method: 'POST',
+            headers: reqHeaders,
+            body: JSON.stringify({ mode })
+          });
+          let data = null;
+          try { data = await response.json(); } catch (_) {}
+          if (!response.ok) throw Error((data && data.error) || (response.status ? 'HTTP ' + response.status : '保存失败'));
+          if (!data) throw Error('保存失败');
+          showPersona(data.mode);
+        } catch (error) {
+          personaStatus.dataset.tone = 'error';
+          personaStatus.textContent = '未切换：' + error.message;
+          Object.values(personaButtons).forEach((b) => { b.disabled = false; });
+        }
+      });
+    }
+    loadPersona();
+    // [TEST-SLICE-END]
+
+
+    let activeDailyScope = 'day'; // 'day' | 'week' | 'total'
+    let selectedDate = null;      // YYYY-MM-DD for Page 1 (单日)
+    let weekOffset = 0;           // 0, -1, -2... for Page 2 (7 日)
+    let lastKnownTodayKey = null;
+    let latestDailyUsage = null;
+
+    function enforceBodyStyles() {
+      if (!document.body) return;
+      document.body.classList.add('agy-sidecar-body');
+      document.body.style.setProperty('background', 'var(--agy-bg)', 'important');
+      document.body.style.setProperty('background-color', 'var(--agy-bg)', 'important');
+      document.body.style.setProperty('color', 'var(--agy-text)', 'important');
+      document.body.style.setProperty('font-family', 'var(--agy-font)', 'important');
+    }
+
+    function applyTheme(theme) {
+      const normalized = theme === 'light' ? 'light' : 'dark';
+      document.documentElement.setAttribute('data-theme', normalized);
+      enforceBodyStyles();
+      const labelEl = document.getElementById('theme-toggle-label');
+      const iconEl = document.getElementById('theme-icon-svg');
+      if (labelEl) {
+        labelEl.textContent = normalized === 'dark' ? '深色' : '浅色';
+      }
+      if (iconEl) {
+        iconEl.innerHTML = normalized === 'dark'
+          ? '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>'
+          : '<circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"></path>';
+      }
+      try {
+        localStorage.setItem(THEME_STORAGE_KEY, normalized);
+      } catch (_) {}
+    }
+
+    (function initTheme() {
+      let saved = 'dark';
+      try {
+        const stored = localStorage.getItem(THEME_STORAGE_KEY) || localStorage.getItem(LEGACY_THEME_STORAGE_KEY);
+        if (stored === 'dark' || stored === 'light') saved = stored;
+      } catch (_) {}
+      applyTheme(saved);
+    })();
+
+    function handleThemeStorage(ev) {
+      if (!ev || ev.key !== THEME_STORAGE_KEY) return;
+      if (ev.newValue === 'dark' || ev.newValue === 'light') {
+        applyTheme(ev.newValue);
+      }
+    }
+    window.addEventListener('storage', handleThemeStorage);
+
+    window.addEventListener('DOMContentLoaded', () => {
+      enforceBodyStyles();
+      setTimeout(enforceBodyStyles, 50);
+      setTimeout(enforceBodyStyles, 250);
+    });
+
+    const themeBtn = document.getElementById('theme-toggle-btn');
+    if (themeBtn) {
+      themeBtn.addEventListener('click', () => {
+        const cur = document.documentElement.getAttribute('data-theme') === 'light' ? 'light' : 'dark';
+        applyTheme(cur === 'dark' ? 'light' : 'dark');
+      });
+    }
+
+    function esc(v) {
+      return String(v == null ? '' : v)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function safeColor(c, fallback) {
+      const s = String(c || '').trim();
+      return /^#[0-9a-f]{3,8}$/i.test(s) ? s : (fallback || '#38bdf8');
+    }
+
+    function num(v) {
+      const n = Number(v);
+      return Number.isFinite(n) ? n : 0;
+    }
+
+    function fmtTok(n) {
+      const v = num(n);
+      if (v >= 1000000) return (v / 1000000).toFixed(2) + 'M';
+      if (v >= 1000) return (v / 1000).toFixed(1) + 'k';
+      return String(v);
+    }
+
+    function setHtmlIfChanged(el, html) {
+      if (!el) return false;
+      const next = String(html == null ? '' : html);
+      if (el.__agyHtml === next && (next === '' ? el.childNodes.length === 0 : el.childNodes.length > 0)) {
+        return false;
+      }
+      el.innerHTML = next;
+      el.__agyHtml = next;
+      return true;
+    }
+
+    function getLocalDateKey(d) {
+      const dt = d instanceof Date ? d : new Date();
+      const y = dt.getFullYear();
+      const m = String(dt.getMonth() + 1).padStart(2, '0');
+      const day = String(dt.getDate()).padStart(2, '0');
+      return `${y}-${m}-${day}`;
+    }
+
+    function shiftDateKey(dateKey, deltaDays) {
+      const parts = String(dateKey || '').split('-').map(Number);
+      if (parts.length !== 3 || !parts[0]) return getLocalDateKey();
+      const dt = new Date(parts[0], (parts[1] || 1) - 1, (parts[2] || 1), 12, 0, 0);
+      if (Number.isNaN(dt.getTime())) return getLocalDateKey();
+      dt.setDate(dt.getDate() + Number(deltaDays || 0));
+      return getLocalDateKey(dt);
+    }
+
+    function createEmptyDayBucket(dateKey) {
+      return {
+        date: dateKey,
+        totalTokens: 0,
+        inputTokens: 0,
+        cacheReadTokens: 0,
+        outputTokens: 0,
+        thinkingTokens: 0,
+        responseTokens: 0,
+        mainTokens: 0,
+        subagentTokens: 0,
+        turnCount: 0,
+        sessionCount: 0,
+        cacheHitRate: 0,
+        models: []
+      };
+    }
+
+    function normalizeDayBucket(raw, dateKey) {
+      if (!raw || typeof raw !== 'object') return createEmptyDayBucket(dateKey);
+      const inputTokens = num(raw.inputTokens);
+      const cacheReadTokens = num(raw.cacheReadTokens);
+      const outputTokens = num(raw.outputTokens);
+      const thinkingTokens = num(raw.thinkingTokens);
+      const responseTokens = raw.responseTokens != null
+        ? num(raw.responseTokens)
+        : Math.max(0, outputTokens - thinkingTokens);
+      const totalTokens = raw.totalTokens != null
+        ? num(raw.totalTokens)
+        : (inputTokens + cacheReadTokens + outputTokens);
+      const promptTok = inputTokens + cacheReadTokens;
+      const cacheHitRate = raw.cacheHitRate != null
+        ? num(raw.cacheHitRate)
+        : (promptTok > 0 ? Number(((cacheReadTokens / promptTok) * 100).toFixed(1)) : 0);
+
+      return {
+        date: String(raw.date || dateKey),
+        totalTokens,
+        inputTokens,
+        cacheReadTokens,
+        outputTokens,
+        thinkingTokens,
+        responseTokens,
+        mainTokens: num(raw.mainTokens),
+        subagentTokens: num(raw.subagentTokens),
+        turnCount: num(raw.turnCount),
+        sessionCount: num(raw.sessionCount),
+        cacheHitRate,
+        models: Array.isArray(raw.models) ? raw.models : []
+      };
+    }
+
+    function lookupDayBucket(daily, dateKey) {
+      if (!daily || typeof daily !== 'object') return createEmptyDayBucket(dateKey);
+      if (daily.days && daily.days[dateKey]) {
+        return normalizeDayBucket(daily.days[dateKey], dateKey);
+      }
+      if (daily.today && daily.today.date === dateKey) {
+        return normalizeDayBucket(daily.today, dateKey);
+      }
+      if (Array.isArray(daily.recentDays)) {
+        const hit = daily.recentDays.find((r) => r && r.date === dateKey);
+        if (hit) return normalizeDayBucket(hit, dateKey);
+      }
+      return createEmptyDayBucket(dateKey);
+    }
+
+    function aggregateModelsFromDays(dayBuckets, bucketTotalTokens) {
+      const modelMap = new Map();
+      for (const day of dayBuckets) {
+        const models = Array.isArray(day.models) ? day.models : [];
+        for (const m of models) {
+          if (!m) continue;
+          const key = String(m.modelName || 'Gemini');
+          let entry = modelMap.get(key);
+          if (!entry) {
+            entry = {
+              modelName: key,
+              shortLabel: String(m.shortLabel || key),
+              family: String(m.family || 'other'),
+              color: String(m.color || '#38bdf8'),
+              totalTokens: 0,
+              inputTokens: 0,
+              cacheReadTokens: 0,
+              outputTokens: 0,
+              thinkingTokens: 0,
+              mainTokens: 0,
+              subagentTokens: 0,
+              turnCount: 0,
+              sessionCount: 0
+            };
+            modelMap.set(key, entry);
+          }
+          entry.totalTokens += num(m.totalTokens);
+          entry.inputTokens += num(m.inputTokens);
+          entry.cacheReadTokens += num(m.cacheReadTokens);
+          entry.outputTokens += num(m.outputTokens);
+          entry.thinkingTokens += num(m.thinkingTokens);
+          entry.mainTokens += num(m.mainTokens);
+          entry.subagentTokens += num(m.subagentTokens);
+          entry.turnCount += num(m.turnCount);
+          entry.sessionCount += num(m.sessionCount);
+        }
+      }
+      const list = [...modelMap.values()].map((m) => {
+        const promptTok = m.inputTokens + m.cacheReadTokens;
+        return {
+          ...m,
+          sharePct: bucketTotalTokens > 0 ? Number(((m.totalTokens / bucketTotalTokens) * 100).toFixed(1)) : 0,
+          cacheHitRate: promptTok > 0 ? Number(((m.cacheReadTokens / promptTok) * 100).toFixed(1)) : 0
+        };
+      });
+      list.sort((a, b) => b.totalTokens - a.totalTokens);
+      return list;
+    }
+
+    function computeWeekInterval(daily, offsetVal) {
+      const offset = Math.min(0, Math.trunc(Number(offsetVal) || 0));
+      const todayKey = String((daily && (daily.todayKey || (daily.today && daily.today.date))) || getLocalDateKey());
+      const endDate = shiftDateKey(todayKey, offset * 7);
+      const startDate = shiftDateKey(endDate, -6);
+
+      const dayBuckets = [];
+      for (let i = 6; i >= 0; i--) {
+        const dKey = shiftDateKey(endDate, -i);
+        const b = lookupDayBucket(daily, dKey);
+        const topColor = (b.models && b.models[0] && b.models[0].color) || '#38bdf8';
+        dayBuckets.push({
+          ...b,
+          label: dKey.slice(5),
+          isToday: dKey === todayKey,
+          topModelColor: topColor
+        });
+      }
+
+      let totalTokens = 0;
+      let inputTokens = 0;
+      let cacheReadTokens = 0;
+      let outputTokens = 0;
+      let thinkingTokens = 0;
+      let mainTokens = 0;
+      let subagentTokens = 0;
+      let turnCount = 0;
+      let sessionCount = 0;
+      let dayCount = 0;
+
+      for (const d of dayBuckets) {
+        if (d.totalTokens > 0) dayCount += 1;
+        totalTokens += d.totalTokens;
+        inputTokens += d.inputTokens;
+        cacheReadTokens += d.cacheReadTokens;
+        outputTokens += d.outputTokens;
+        thinkingTokens += d.thinkingTokens;
+        mainTokens += d.mainTokens;
+        subagentTokens += d.subagentTokens;
+        turnCount += d.turnCount;
+        sessionCount += d.sessionCount;
+      }
+
+      const rawW = (offset === 0 && daily && daily.weekly) ? daily.weekly : null;
+      if (rawW && num(rawW.totalTokens) > totalTokens) {
+        totalTokens = num(rawW.totalTokens);
+        inputTokens = num(rawW.inputTokens);
+        cacheReadTokens = num(rawW.cacheReadTokens);
+        outputTokens = num(rawW.outputTokens);
+        thinkingTokens = num(rawW.thinkingTokens);
+        mainTokens = num(rawW.mainTokens);
+        subagentTokens = num(rawW.subagentTokens);
+        turnCount = num(rawW.turnCount);
+        sessionCount = num(rawW.sessionCount);
+        dayCount = Math.max(dayCount, num(rawW.dayCount));
+      } else if (rawW && num(rawW.totalTokens) === totalTokens && num(rawW.sessionCount) > 0) {
+        sessionCount = num(rawW.sessionCount);
+      }
+
+      const promptTok = inputTokens + cacheReadTokens;
+      const cacheHitRate = promptTok > 0
+        ? Number(((cacheReadTokens / promptTok) * 100).toFixed(1))
+        : (rawW ? num(rawW.cacheHitRate) : 0);
+
+      let models = aggregateModelsFromDays(dayBuckets, totalTokens);
+      if (models.length === 0 && rawW && Array.isArray(rawW.models) && rawW.models.length > 0) {
+        models = rawW.models;
+      }
+
+      const peakDay = dayBuckets.reduce(
+        (best, cur) => (cur.totalTokens > best.totalTokens ? cur : best),
+        dayBuckets[0] || createEmptyDayBucket(endDate)
+      );
+      const avgDailyTokens = Math.round(totalTokens / 7);
+      const activeAvgTokens = dayCount > 0 ? Math.round(totalTokens / dayCount) : 0;
+
+      return {
+        offset,
+        startDate,
+        endDate,
+        totalTokens,
+        inputTokens,
+        cacheReadTokens,
+        outputTokens,
+        thinkingTokens,
+        responseTokens: Math.max(0, outputTokens - thinkingTokens),
+        mainTokens,
+        subagentTokens,
+        turnCount,
+        sessionCount,
+        dayCount,
+        cacheHitRate,
+        avgDailyTokens,
+        activeAvgTokens,
+        peakDay,
+        days: dayBuckets,
+        models
+      };
+    }
+
+    function computeTotalOverview(daily, todayKey) {
+      const daysMap = (daily && daily.days && typeof daily.days === 'object') ? daily.days : {};
+      const dateSet = new Set(Object.keys(daysMap));
+      if (Array.isArray(daily && daily.availableDates)) {
+        daily.availableDates.forEach((d) => { if (d) dateSet.add(String(d)); });
+      }
+      dateSet.add(todayKey);
+      const allDates = [...dateSet].sort();
+
+      const allDayBuckets = allDates.map((dKey) => lookupDayBucket(daily, dKey));
+      const activeBuckets = allDayBuckets.filter((b) => b.totalTokens > 0);
+
+      let sumTotal = 0;
+      let sumIn = 0;
+      let sumCache = 0;
+      let sumOut = 0;
+      let sumThink = 0;
+      let sumMain = 0;
+      let sumSub = 0;
+      let sumTurns = 0;
+      let sumSessions = 0;
+      for (const b of allDayBuckets) {
+        sumTotal += b.totalTokens;
+        sumIn += b.inputTokens;
+        sumCache += b.cacheReadTokens;
+        sumOut += b.outputTokens;
+        sumThink += b.thinkingTokens;
+        sumMain += b.mainTokens;
+        sumSub += b.subagentTokens;
+        sumTurns += b.turnCount;
+        sumSessions += b.sessionCount;
+      }
+
+      const gRaw = (daily && daily.grandTotal && typeof daily.grandTotal === 'object') ? daily.grandTotal : {};
+      const useRaw = num(gRaw.totalTokens) >= sumTotal && num(gRaw.totalTokens) > 0;
+
+      const totalTokens = useRaw ? num(gRaw.totalTokens) : sumTotal;
+      const inputTokens = useRaw ? num(gRaw.inputTokens) : sumIn;
+      const cacheReadTokens = useRaw ? num(gRaw.cacheReadTokens) : sumCache;
+      const outputTokens = useRaw ? num(gRaw.outputTokens) : sumOut;
+      const thinkingTokens = useRaw ? num(gRaw.thinkingTokens) : sumThink;
+      const mainTokens = useRaw ? num(gRaw.mainTokens) : sumMain;
+      const subagentTokens = useRaw ? num(gRaw.subagentTokens) : sumSub;
+      const turnCount = useRaw ? num(gRaw.turnCount) : sumTurns;
+      const sessionCount = (useRaw && num(gRaw.sessionCount) > 0) ? num(gRaw.sessionCount) : sumSessions;
+      const dayCount = Math.max(activeBuckets.length, num(gRaw.dayCount));
+      const promptTok = inputTokens + cacheReadTokens;
+      const cacheHitRate = promptTok > 0
+        ? Number(((cacheReadTokens / promptTok) * 100).toFixed(1))
+        : num(gRaw.cacheHitRate);
+
+      let models = (useRaw && Array.isArray(gRaw.models) && gRaw.models.length > 0)
+        ? [...gRaw.models].sort((a, b) => num(b.totalTokens) - num(a.totalTokens))
+        : aggregateModelsFromDays(allDayBuckets, totalTokens);
+
+      const firstDate = activeBuckets.length > 0
+        ? activeBuckets[0].date
+        : (allDates[0] || todayKey);
+
+      const peakDay = allDayBuckets.reduce(
+        (best, cur) => (cur.totalTokens > best.totalTokens ? cur : best),
+        allDayBuckets[allDayBuckets.length - 1] || createEmptyDayBucket(todayKey)
+      );
+
+      // Build 4-week x 7-day (28-day) heatmap matrix
+      const weeks = [];
+      let max28dTokens = 1;
+      for (let w = -3; w <= 0; w++) {
+        const wEnd = shiftDateKey(todayKey, w * 7);
+        const wStart = shiftDateKey(wEnd, -6);
+        const cells = [];
+        for (let c = 6; c >= 0; c--) {
+          const dKey = shiftDateKey(wEnd, -c);
+          const b = lookupDayBucket(daily, dKey);
+          if (b.totalTokens > max28dTokens) max28dTokens = b.totalTokens;
+          cells.push({
+            date: dKey,
+            label: dKey.slice(5),
+            isToday: dKey === todayKey,
+            totalTokens: b.totalTokens,
+            turnCount: b.turnCount,
+            sessionCount: b.sessionCount
+          });
+        }
+        weeks.push({
+          weekOffset: w,
+          label: `${wStart.slice(5)}~${wEnd.slice(5)}`,
+          cells
+        });
+      }
+
+      return {
+        firstDate,
+        todayKey,
+        totalTokens,
+        inputTokens,
+        cacheReadTokens,
+        outputTokens,
+        thinkingTokens,
+        responseTokens: Math.max(0, outputTokens - thinkingTokens),
+        mainTokens,
+        subagentTokens,
+        turnCount,
+        sessionCount,
+        dayCount,
+        cacheHitRate,
+        peakDay,
+        models,
+        heatmapWeeks: weeks,
+        max28dTokens
+      };
+    }
+
+    function normalizeScopeKey(scope) {
+      if (scope === 'today' || scope === 'day') return 'day';
+      if (scope === 'weekly' || scope === 'week') return 'week';
+      if (scope === 'total') return 'total';
+      return null;
+    }
+
+    function setDailyScope(scope) {
+      const normalized = normalizeScopeKey(scope);
+      if (!normalized) return;
+      activeDailyScope = normalized;
+      document.querySelectorAll('.scope-tab[data-scope]').forEach((el) => {
+        const isAct = el.getAttribute('data-scope') === normalized;
+        el.classList.toggle('active', isAct);
+        el.setAttribute('aria-selected', isAct ? 'true' : 'false');
+        el.tabIndex = isAct ? 0 : -1;
+      });
+      document.querySelectorAll('.view-page[data-view-page]').forEach((pageEl) => {
+        pageEl.classList.toggle('active', pageEl.getAttribute('data-view-page') === normalized);
+      });
+      if (latestDailyUsage) {
+        renderDaily(latestDailyUsage);
+      }
+    }
+
+    document.addEventListener('keydown', (ev) => {
+      if (!ev.target || typeof ev.target.closest !== 'function') return;
+      const tab = ev.target.closest('.scope-tab[data-scope]');
+      if (!tab) return;
+      const tablist = tab.closest('[role="tablist"]');
+      if (!tablist) return;
+      const tabs = [...tablist.querySelectorAll('.scope-tab[data-scope]')];
+      if (tabs.length === 0) return;
+      const curIdx = tabs.indexOf(tab);
+      let nextIdx = -1;
+      if (ev.key === 'ArrowRight') nextIdx = (curIdx + 1) % tabs.length;
+      else if (ev.key === 'ArrowLeft') nextIdx = (curIdx - 1 + tabs.length) % tabs.length;
+      else if (ev.key === 'Home') nextIdx = 0;
+      else if (ev.key === 'End') nextIdx = tabs.length - 1;
+      if (nextIdx >= 0) {
+        ev.preventDefault();
+        const nextTab = tabs[nextIdx];
+        setDailyScope(nextTab.getAttribute('data-scope'));
+        nextTab.focus();
+      }
+    });
+
+    document.addEventListener('click', (ev) => {
+      if (!ev.target || typeof ev.target.closest !== 'function') return;
+
+      // 1. Segmented 3-Page Scope Switcher
+      const scopeBtn = ev.target.closest('.scope-tab[data-scope]');
+      if (scopeBtn) {
+        setDailyScope(scopeBtn.getAttribute('data-scope'));
+        return;
+      }
+
+      // 2. Page 1 Single-Day Stepper
+      const dayNavBtn = ev.target.closest('[data-day-nav]');
+      if (dayNavBtn && !dayNavBtn.disabled && latestDailyUsage) {
+        const todayKey = String(latestDailyUsage.todayKey || (latestDailyUsage.today && latestDailyUsage.today.date) || getLocalDateKey());
+        const curDate = selectedDate || todayKey;
+        const action = dayNavBtn.getAttribute('data-day-nav');
+        if (action === 'prev') {
+          selectedDate = shiftDateKey(curDate, -1);
+        } else if (action === 'next') {
+          const nextD = shiftDateKey(curDate, 1);
+          selectedDate = nextD > todayKey ? todayKey : nextD;
+        } else if (action === 'today') {
+          selectedDate = todayKey;
+        }
+        renderDaily(latestDailyUsage);
+        return;
+      }
+
+      // 3. Page 2 7-Day Interval Stepper
+      const weekNavBtn = ev.target.closest('[data-week-nav]');
+      if (weekNavBtn && !weekNavBtn.disabled && latestDailyUsage) {
+        const action = weekNavBtn.getAttribute('data-week-nav');
+        if (action === 'prev') {
+          weekOffset -= 1;
+        } else if (action === 'next') {
+          weekOffset = Math.min(0, weekOffset + 1);
+        } else if (action === 'reset') {
+          weekOffset = 0;
+        }
+        renderDaily(latestDailyUsage);
+        return;
+      }
+
+      // 4. 7-Day Bar Click (in Page 1 selects date; in Page 2 drills down to Page 1 for that date)
+      const trendCol = ev.target.closest('[data-trend-date]');
+      if (trendCol && latestDailyUsage) {
+        const clickedDate = trendCol.getAttribute('data-trend-date');
+        if (clickedDate) {
+          selectedDate = clickedDate;
+          if (activeDailyScope !== 'day') {
+            setDailyScope('day');
+          } else {
+            renderDaily(latestDailyUsage);
+          }
+          return;
+        }
+      }
+
+      // 5. 28-Day Heatmap Cell Click (drills down to Page 1 for that date)
+      const heatCell = ev.target.closest('[data-heatmap-date]');
+      if (heatCell && latestDailyUsage) {
+        const clickedDate = heatCell.getAttribute('data-heatmap-date');
+        if (clickedDate) {
+          selectedDate = clickedDate;
+          setDailyScope('day');
+        }
+      }
+    });
+
+    function renderModelsListHtml(models, emptyText, showRank) {
+      if (!Array.isArray(models) || models.length === 0) {
+        return `<div class="empty-state">${esc(emptyText || '该时间范围暂无模型调用记录')}</div>`;
+      }
+      return models.map((m, idx) => {
+        const thinkPart = num(m.thinkingTokens) > 0 ? ` · 思考 ${fmtTok(m.thinkingTokens)}` : '';
+        const rightSub = num(m.subagentTokens) > 0
+          ? `主 ${fmtTok(m.mainTokens)} / 子代理 ${fmtTok(m.subagentTokens)}`
+          : `单轮均值 ~${fmtTok(Math.round(num(m.totalTokens) / Math.max(1, num(m.turnCount))))}`;
+        const modelColor = safeColor(m.color, '#38bdf8');
+        return `
+          <div class="model-row">
+            <div class="model-row-top mono">
+              <span class="model-name-wrap">
+                ${showRank ? `<span class="model-rank-badge">#${idx + 1}</span>` : ''}
+                <span class="model-dot" style="background:${modelColor};"></span>
+                <span class="model-name-text" title="${esc(m.modelName)}">${esc(m.modelName)}</span>
+              </span>
+              <span class="model-stats-right">
+                <strong>${fmtTok(m.totalTokens)}</strong>
+                <span>(${num(m.sharePct)}%) · 缓${num(m.cacheHitRate)}% · ${num(m.turnCount)}轮/${num(m.sessionCount)}会话</span>
+              </span>
+            </div>
+            <div class="bar-bg" style="height: 5px; margin: 6px 0 4px;">
+              <div style="height:100%; border-radius:99px; background:${modelColor}; width:${Math.min(100, Math.max(2, num(m.sharePct)))}%"></div>
+            </div>
+            <div class="model-sub-meta mono">
+              <span>新增 +${fmtTok(m.inputTokens)} · 缓存 ${fmtTok(m.cacheReadTokens)} · 输出 ${fmtTok(m.outputTokens)}${thinkPart}</span>
+              <span>${rightSub}</span>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function renderBarChartHtml(daysList, activeDateKey, highlightSelected) {
+      if (!Array.isArray(daysList) || daysList.length === 0) {
+        return '<div class="empty-state" style="grid-column: 1 / -1;">暂无趋势数据</div>';
+      }
+      const maxTok = Math.max(...daysList.map((d) => num(d.totalTokens)), 1);
+      return daysList.map((d) => {
+        const tok = num(d.totalTokens);
+        const heightPct = tok > 0 ? Math.max(10, Math.round((tok / maxTok) * 100)) : 4;
+        const barColor = tok > 0 ? safeColor(d.topModelColor, '#38bdf8') : 'var(--agy-border-strong)';
+        const isSelected = Boolean(highlightSelected && activeDateKey === d.date);
+        const pressedAttr = highlightSelected ? ` aria-pressed="${isSelected ? 'true' : 'false'}"` : '';
+        const tip = `${d.date}: Σ ${fmtTok(tok)} tokens (${num(d.turnCount)} 轮 / ${num(d.sessionCount)} 会话)`;
+        return `
+          <button type="button" class="trend-col ${d.isToday ? 'is-today' : ''} ${isSelected ? 'selected' : ''}" data-trend-date="${esc(d.date)}"${pressedAttr} aria-label="${esc(tip)}" title="${esc(tip)}">
+            <span class="trend-val mono">${tok > 0 ? fmtTok(tok) : '-'}</span>
+            <span class="trend-bar-track">
+              <span class="trend-bar-fill" style="height: ${heightPct}%; background: ${barColor};"></span>
+            </span>
+            <span class="trend-date mono">${d.isToday ? '今日' : esc(d.label || d.date.slice(5))}</span>
+          </button>
+        `;
+      }).join('');
+    }
+
+    function renderDaily(daily) {
+      latestDailyUsage = daily;
+      const badgeEl = document.getElementById('daily-total-badge');
+      if (!badgeEl) return;
+      if (!daily || !daily.today) {
+        badgeEl.textContent = '暂无数据';
+        return;
+      }
+
+      const todayKey = String(daily.todayKey || (daily.today && daily.today.date) || getLocalDateKey());
+      if (!selectedDate || (lastKnownTodayKey && selectedDate === lastKnownTodayKey && lastKnownTodayKey !== todayKey)) {
+        selectedDate = todayKey;
+      }
+      lastKnownTodayKey = todayKey;
+
+      // ==================== 1. Render Page 1 (单日) ====================
+      const dayBucket = lookupDayBucket(daily, selectedDate);
+      const isAtToday = selectedDate >= todayKey;
+
+      document.getElementById('day-stepper-label').textContent = selectedDate;
+      document.getElementById('day-next-btn').disabled = isAtToday;
+      document.getElementById('day-today-btn').disabled = isAtToday;
+      document.getElementById('day-stepper-meta').textContent =
+        `${selectedDate === todayKey ? '今日实时' : '历史单日'} · ${num(dayBucket.sessionCount)} 会话 · ${num(dayBucket.turnCount)} 轮推理`;
+
+      document.getElementById('day-kpi-total-tag').textContent = selectedDate === todayKey ? '今日' : selectedDate.slice(5);
+      document.getElementById('day-kpi-total-val').textContent = 'Σ ' + fmtTok(dayBucket.totalTokens);
+      document.getElementById('day-kpi-total-meta').textContent =
+        `${num(dayBucket.sessionCount)} 会话 · ${num(dayBucket.turnCount)} 轮 · 新增 +${fmtTok(dayBucket.inputTokens)}`;
+
+      document.getElementById('day-kpi-cache-tag').textContent = `复用率`;
+      document.getElementById('day-kpi-cache-val').textContent = `${num(dayBucket.cacheHitRate)}%`;
+      document.getElementById('day-kpi-cache-meta').textContent =
+        `缓存 ${fmtTok(dayBucket.cacheReadTokens)} · 新增 +${fmtTok(dayBucket.inputTokens)}`;
+
+      const dayThinkPct = dayBucket.outputTokens > 0
+        ? Math.round((dayBucket.thinkingTokens / dayBucket.outputTokens) * 100)
+        : 0;
+      document.getElementById('day-kpi-out-tag').textContent = `思考 ${dayThinkPct}%`;
+      document.getElementById('day-kpi-out-val').textContent = fmtTok(dayBucket.outputTokens);
+      document.getElementById('day-kpi-out-meta').textContent =
+        `思考 ${fmtTok(dayBucket.thinkingTokens)} · 回复 ${fmtTok(dayBucket.responseTokens)}`;
+
+      // Page 1 7-day quick bar window (trailing 7 days from todayKey, or anchored at selectedDate if older)
+      const earliestRecentKey = shiftDateKey(todayKey, -6);
+      const anchorEndKey = selectedDate < earliestRecentKey ? selectedDate : todayKey;
+      const quickBarDays = [];
+      for (let i = 6; i >= 0; i--) {
+        const dKey = shiftDateKey(anchorEndKey, -i);
+        const b = lookupDayBucket(daily, dKey);
+        quickBarDays.push({
+          ...b,
+          label: dKey.slice(5),
+          isToday: dKey === todayKey,
+          topModelColor: (b.models && b.models[0] && b.models[0].color) || '#38bdf8'
+        });
+      }
+      const quickPeak = quickBarDays.reduce((best, cur) => (cur.totalTokens > best.totalTokens ? cur : best), quickBarDays[0]);
+      document.getElementById('trend-peak-label').textContent = quickPeak && quickPeak.totalTokens > 0
+        ? `峰值 ${quickPeak.label} · ${fmtTok(quickPeak.totalTokens)}`
+        : '区间无调用';
+      setHtmlIfChanged(document.getElementById('daily-trend-chart'), renderBarChartHtml(quickBarDays, selectedDate, true));
+
+      const daySubagentPart = dayBucket.subagentTokens > 0
+        ? ` | 主会话 ${fmtTok(dayBucket.mainTokens)} · 子代理 ${fmtTok(dayBucket.subagentTokens)}`
+        : '';
+      document.getElementById('day-sub-text').textContent =
+        `${selectedDate} 明细 | ${num(dayBucket.sessionCount)} 会话 · ${num(dayBucket.turnCount)} 轮 | 新增 +${fmtTok(dayBucket.inputTokens)} · 缓存 ${fmtTok(dayBucket.cacheReadTokens)} (${num(dayBucket.cacheHitRate)}%) · 输出 ${fmtTok(dayBucket.outputTokens)}${daySubagentPart}`;
+      setHtmlIfChanged(document.getElementById('day-models-list'), renderModelsListHtml(
+        dayBucket.models,
+        `${selectedDate} 暂无模型调用记录`,
+        false
+      ));
+
+      // ==================== 2. Render Page 2 (7 日区间视图) ====================
+      const weekData = computeWeekInterval(daily, weekOffset);
+      document.getElementById('week-stepper-label').textContent = `${weekData.startDate.slice(5)} ~ ${weekData.endDate.slice(5)}`;
+      document.getElementById('week-stepper-label').title = `${weekData.startDate} ~ ${weekData.endDate}`;
+      document.getElementById('week-next-btn').disabled = weekData.offset >= 0;
+      document.getElementById('week-reset-btn').disabled = weekData.offset === 0;
+      document.getElementById('week-stepper-meta').textContent =
+        `${weekData.offset === 0 ? '本七日区间' : `历史区间 (W${weekData.offset})`} · 活跃 ${weekData.dayCount}/7 天`;
+
+      document.getElementById('week-kpi-total-tag').textContent = `活跃 ${weekData.dayCount}/7 天`;
+      document.getElementById('week-kpi-total-val').textContent = 'Σ ' + fmtTok(weekData.totalTokens);
+      document.getElementById('week-kpi-total-meta').textContent =
+        `${num(weekData.sessionCount)} 会话 · ${num(weekData.turnCount)} 轮 · 新增 +${fmtTok(weekData.inputTokens)}`;
+
+      document.getElementById('week-kpi-peak-tag').textContent = weekData.peakDay && weekData.peakDay.totalTokens > 0
+        ? `峰值 ${weekData.peakDay.label}`
+        : '无峰值';
+      document.getElementById('week-kpi-peak-val').textContent = `日均 ${fmtTok(weekData.avgDailyTokens)}`;
+      document.getElementById('week-kpi-peak-meta').textContent = weekData.peakDay && weekData.peakDay.totalTokens > 0
+        ? `最高 ${weekData.peakDay.label} (${fmtTok(weekData.peakDay.totalTokens)}) · 活跃均 ${fmtTok(weekData.activeAvgTokens)}`
+        : '该七日区间内无调用记录';
+
+      document.getElementById('week-kpi-cache-tag').textContent = `缓 ${num(weekData.cacheHitRate)}%`;
+      document.getElementById('week-kpi-cache-val').textContent = `${num(weekData.cacheHitRate)}% · 出 ${fmtTok(weekData.outputTokens)}`;
+      document.getElementById('week-kpi-cache-meta').textContent =
+        `缓存 ${fmtTok(weekData.cacheReadTokens)} · 思考 ${fmtTok(weekData.thinkingTokens)}`;
+
+      document.getElementById('week-trend-title').textContent =
+        `七日区间每日分布 (${weekData.startDate.slice(5)} ~ ${weekData.endDate.slice(5)} · 点击柱体下钻单日)`;
+      document.getElementById('week-trend-peak-label').textContent = weekData.peakDay && weekData.peakDay.totalTokens > 0
+        ? `区间峰值 ${weekData.peakDay.label} · ${fmtTok(weekData.peakDay.totalTokens)}`
+        : '区间无调用';
+      setHtmlIfChanged(document.getElementById('week-trend-chart'), renderBarChartHtml(weekData.days, null, false));
+
+      const weekSubagentPart = weekData.subagentTokens > 0
+        ? ` | 主会话 ${fmtTok(weekData.mainTokens)} · 子代理 ${fmtTok(weekData.subagentTokens)}`
+        : '';
+      document.getElementById('week-sub-text').textContent =
+        `区间 (${weekData.startDate.slice(5)}~${weekData.endDate.slice(5)}) 汇总 | ${num(weekData.sessionCount)} 会话 · ${num(weekData.turnCount)} 轮 | 新增 +${fmtTok(weekData.inputTokens)} · 缓存 ${fmtTok(weekData.cacheReadTokens)} (${num(weekData.cacheHitRate)}%) · 输出 ${fmtTok(weekData.outputTokens)}${weekSubagentPart}`;
+      setHtmlIfChanged(document.getElementById('week-models-list'), renderModelsListHtml(
+        weekData.models,
+        '该七日区间暂无模型调用记录',
+        false
+      ));
+
+      // ==================== 3. Render Page 3 (总计成熟总览看板) ====================
+      const totalData = computeTotalOverview(daily, todayKey);
+      document.getElementById('total-lifecycle-badge').textContent =
+        `首日 ${totalData.firstDate} ~ 今日 ${totalData.todayKey} · 活跃 ${totalData.dayCount} 天`;
+      document.getElementById('total-lifecycle-meta').textContent =
+        `累计 ${num(totalData.sessionCount)} 会话 · ${num(totalData.turnCount)} 轮推理 · ${totalData.models.length} 款模型`;
+
+      document.getElementById('total-kpi-sum-tag').textContent = `${totalData.dayCount} 天活跃`;
+      document.getElementById('total-kpi-sum-val').textContent = 'Σ ' + fmtTok(totalData.totalTokens);
+      document.getElementById('total-kpi-sum-meta').textContent =
+        `${num(totalData.sessionCount)} 会话 · ${num(totalData.turnCount)} 轮推理`;
+
+      document.getElementById('total-kpi-peak-tag').textContent = totalData.peakDay ? totalData.peakDay.date.slice(5) : '--';
+      document.getElementById('total-kpi-peak-val').textContent = 'Σ ' + fmtTok(totalData.peakDay ? totalData.peakDay.totalTokens : 0);
+      document.getElementById('total-kpi-peak-meta').textContent = totalData.peakDay && totalData.peakDay.totalTokens > 0
+        ? `${totalData.peakDay.date} · ${num(totalData.peakDay.sessionCount)}会话/${num(totalData.peakDay.turnCount)}轮`
+        : '尚无单日峰值记录';
+
+      document.getElementById('total-kpi-cache-tag').textContent = '全局复用';
+      document.getElementById('total-kpi-cache-val').textContent = `${num(totalData.cacheHitRate)}%`;
+      document.getElementById('total-kpi-cache-meta').textContent =
+        `缓存 ${fmtTok(totalData.cacheReadTokens)} · 新增 +${fmtTok(totalData.inputTokens)}`;
+
+      const totalThinkPct = totalData.outputTokens > 0
+        ? Math.round((totalData.thinkingTokens / totalData.outputTokens) * 100)
+        : 0;
+      document.getElementById('total-kpi-out-tag').textContent = `思考 ${totalThinkPct}%`;
+      document.getElementById('total-kpi-out-val').textContent = fmtTok(totalData.outputTokens);
+      document.getElementById('total-kpi-out-meta').textContent =
+        `思考 ${fmtTok(totalData.thinkingTokens)} · 回复 ${fmtTok(totalData.responseTokens)}`;
+
+      // Render 4-week x 7-day (28-day) heatmap matrix
+      const matrixEl = document.getElementById('total-heatmap-matrix');
+      if (matrixEl) {
+        setHtmlIfChanged(matrixEl, totalData.heatmapWeeks.map((wRow) => {
+          const cellsHtml = wRow.cells.map((cell) => {
+            const tok = num(cell.totalTokens);
+            let level = 0;
+            if (tok > 0) {
+              const ratio = tok / totalData.max28dTokens;
+              if (ratio >= 0.75) level = 4;
+              else if (ratio >= 0.45) level = 3;
+              else if (ratio >= 0.20) level = 2;
+              else level = 1;
+            }
+            const cellTip = `${cell.date}: Σ ${fmtTok(tok)} tokens (${num(cell.turnCount)} 轮 / ${num(cell.sessionCount)} 会话)`;
+            const rawLbl = String(cell.label || cell.date.slice(5));
+            const cellDateHtml = cell.isToday
+              ? '今日'
+              : (rawLbl.length > 3 ? `<span class="hm-mm">${esc(rawLbl.slice(0, 3))}</span>${esc(rawLbl.slice(3))}` : esc(rawLbl));
+            return `
+              <button type="button" class="heatmap-cell level-${level} ${cell.isToday ? 'is-today' : ''}" data-heatmap-date="${esc(cell.date)}" aria-label="${esc(cellTip)}" title="${esc(cellTip)}">
+                <span class="heatmap-cell-date mono">${cellDateHtml}</span>
+                <span class="heatmap-cell-val mono">${tok > 0 ? fmtTok(tok) : '-'}</span>
+              </button>
+            `;
+          }).join('');
+          return `
+            <div class="heatmap-row">
+              <span class="heatmap-week-label mono">${esc(wRow.label)}</span>
+              ${cellsHtml}
+            </div>
+          `;
+        }).join(''));
+      }
+
+      const totalSubagentPart = totalData.subagentTokens > 0
+        ? ` | 主会话 ${fmtTok(totalData.mainTokens)} · 子代理 ${fmtTok(totalData.subagentTokens)}`
+        : '';
+      document.getElementById('total-sub-text').textContent =
+        `全周期模型排行榜 | 累计 Σ ${fmtTok(totalData.totalTokens)} | 新增 +${fmtTok(totalData.inputTokens)} · 缓存 ${fmtTok(totalData.cacheReadTokens)} (${num(totalData.cacheHitRate)}%) · 输出 ${fmtTok(totalData.outputTokens)}${totalSubagentPart}`;
+      setHtmlIfChanged(document.getElementById('total-models-list'), renderModelsListHtml(
+        totalData.models,
+        '暂无历史模型调用记录',
+        true
+      ));
+
+      // Update Card Header Badge for Active View
+      if (activeDailyScope === 'day') {
+        badgeEl.textContent = `单日 (${selectedDate.slice(5)}) · Σ ${fmtTok(dayBucket.totalTokens)} tok`;
+      } else if (activeDailyScope === 'week') {
+        badgeEl.textContent = `7 日 (${weekData.startDate.slice(5)}~${weekData.endDate.slice(5)}) · Σ ${fmtTok(weekData.totalTokens)} tok`;
+      } else {
+        badgeEl.textContent = `总计 (${totalData.dayCount}天) · Σ ${fmtTok(totalData.totalTokens)} tok`;
+      }
+    }
+
+    function renderEmptySessionState(hintMeta, ctxBadgeText) {
+      const headerMeta = document.getElementById('header-conv-meta');
+      if (headerMeta) {
+        headerMeta.textContent = hintMeta || '暂无活跃会话 · 请从目标会话右侧打开 HUD';
+      }
+      const ctxEl = document.getElementById('ctx-text');
+      if (ctxEl) {
+        ctxEl.textContent = ctxBadgeText || '暂无会话';
+        ctxEl.className = 'mono badge';
+      }
+      const barCache = document.getElementById('bar-cache');
+      const barNew = document.getElementById('bar-new');
+      if (barCache) barCache.style.width = '0%';
+      if (barNew) barNew.style.width = '0%';
+      const cacheEl = document.getElementById('cache-text');
+      if (cacheEl) cacheEl.textContent = '缓存命中: --';
+      const speedEl = document.getElementById('speed-text');
+      if (speedEl) speedEl.textContent = '速率: -- tok/s';
+      const totalEl = document.getElementById('total-text');
+      if (totalEl) totalEl.textContent = '会话累计: --';
+      const totalDetailEl = document.getElementById('total-detail');
+      if (totalDetailEl) totalDetailEl.textContent = '新增 -- · 缓存 -- · 输出 --';
+      const cBadge = document.getElementById('consumers-count-badge');
+      if (cBadge) cBadge.textContent = '暂无记录';
+      const cList = document.getElementById('consumers-list');
+      setHtmlIfChanged(cList, '<div class="empty-state">暂无上下文消耗记录</div>');
+      const tBadge = document.getElementById('thinking-count-badge');
+      if (tBadge) tBadge.textContent = '暂无记录';
+      const tList = document.getElementById('thinking-list');
+      setHtmlIfChanged(tList, '<div class="empty-state">暂无思考链记录</div>');
+    }
+
+    function render(data) {
+      if (data && data.dailyUsage) {
+        renderDaily(data.dailyUsage);
+      }
+      if (!data || data.error || !Array.isArray(data.steps)) {
+        const errHint = data && data.error === 'no_active_conversation'
+          ? '当前暂无活跃会话 · 发送消息后自动同步'
+          : (data && data.error ? '会话遥测不可用 (' + String(data.error) + ')' : '等待会话遥测数据...');
+        renderEmptySessionState(errHint, data && data.error ? '无会话' : '等待中');
+        return;
+      }
+
+      const headerMeta = document.getElementById('header-conv-meta');
+      if (headerMeta) {
+        const shortCid = data.conversationId ? '#' + String(data.conversationId).slice(0, 8) : '当前会话';
+        const modelTag = data.modelName ? String(data.modelName) : 'Gemini';
+        headerMeta.textContent = `${modelTag} · 会话 ${shortCid} · 共 ${num(data.plannerStepCount || data.steps.length)} 轮推理`;
+      }
+
+      const limit = num(data.contextLimit) || 256000;
+      const curCtx = num(data.currentContext);
+      const peakCtx = num(data.peakContext || curCtx);
+      const compactions = num(data.compactionCount);
+      const usagePct = num(data.contextUsagePct);
+      const peakSuffix = (peakCtx > curCtx + 10000 || compactions > 0)
+        ? ` | 峰值 ${peakCtx.toLocaleString()}${compactions > 0 ? ` · 已压缩 ${compactions} 次` : ''}`
+        : '';
+
+      const ctxEl = document.getElementById('ctx-text');
+      ctxEl.textContent = `${curCtx.toLocaleString()} / ${limit.toLocaleString()} (${usagePct}%)${peakSuffix}`;
+      ctxEl.className = 'mono badge ' + (usagePct >= 85 ? 'badge-rose' : (usagePct >= 60 ? 'badge-amber' : 'badge-green'));
+
+      document.getElementById('cache-text').textContent =
+        `缓存命中: ${num(data.latestCacheHitRate)}% | 新增: +${num(data.latestInputTokens).toLocaleString()}`;
+      document.getElementById('speed-text').textContent =
+        `速率: ${num(data.latestTokPerSec)} tok/s (均值 ${num(data.avgTokPerSec)})`;
+
+      const totIn = num(data.totalInputTokens);
+      const totCache = num(data.totalCacheReadTokens);
+      const totOut = num(data.totalOutputTokens);
+      const totAll = num(data.totalTokens) || (totIn + totCache + totOut);
+
+      document.getElementById('total-text').textContent =
+        `会话累计: Σ ${totAll.toLocaleString()} tokens${data.isEstimated ? ' (估算)' : ''}`;
+      document.getElementById('total-detail').textContent =
+        `新增 ${totIn.toLocaleString()} · 缓存 ${totCache.toLocaleString()} · 输出 ${totOut.toLocaleString()}`;
+
+      const scale = Math.max(num(data.currentContext), 1);
+      const cachePct = Math.min(100, (num(data.latestCacheReadTokens) / scale) * 100);
+      const newPct = Math.min(100 - cachePct, (num(data.latestInputTokens) / scale) * 100);
+      document.getElementById('bar-cache').style.width = cachePct + '%';
+      document.getElementById('bar-new').style.width = newPct + '%';
+
+      const consumers = data.topConsumers || [];
+      const cBadge = document.getElementById('consumers-count-badge');
+      if (cBadge) cBadge.textContent = consumers.length > 0 ? `Top ${consumers.length}` : '暂无记录';
+
+      const cList = document.getElementById('consumers-list');
+      setHtmlIfChanged(cList, consumers.map((c, idx) => `
+        <div class="consumer-item mono">
+          <span class="consumer-left">
+            <span class="consumer-rank">${idx + 1}</span>
+            <span class="consumer-label">Step #${esc(c.stepIndex)} · ${esc(c.label)}</span>
+          </span>
+          <span class="consumer-delta">+${num(c.deltaTokens).toLocaleString()} tok</span>
+        </div>
+      `).join('') || '<div class="empty-state">暂无上下文消耗记录</div>');
+
+      const tList = document.getElementById('thinking-list');
+      const stepsWithThink = [...(data.steps || [])].reverse().filter(s => s.thinking);
+      const tBadge = document.getElementById('thinking-count-badge');
+      if (tBadge) tBadge.textContent = stepsWithThink.length > 0 ? `${stepsWithThink.length} 条思考链` : '暂无记录';
+
+      const prevOpenMap = new Map();
+      if (tList) {
+        tList.querySelectorAll('details[data-step-idx]').forEach((det) => {
+          prevOpenMap.set(det.getAttribute('data-step-idx'), det.open);
+        });
+      }
+      setHtmlIfChanged(tList, stepsWithThink.map((s, idx) => {
+        const sKey = String(s.stepIndex);
+        const shouldOpen = prevOpenMap.has(sKey) ? prevOpenMap.get(sKey) : (idx === 0);
+        return `
+        <details data-step-idx="${esc(sKey)}" ${shouldOpen ? 'open' : ''}>
+          <summary class="mono">
+            <span class="summary-left">
+              <svg class="summary-chevron" width="11" height="11" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 2.5L8 6L4.5 9.5"/></svg>
+              <span>Step #${esc(s.stepIndex)} · ${num(s.tokPerSec)} tok/s</span>
+            </span>
+            <span class="summary-meta">${num(s.outputTokens)} tok / ${num(s.durationSec)}s</span>
+          </summary>
+          <pre>${esc(s.thinking)}</pre>
+        </details>
+      `;
+      }).join('') || '<div class="empty-state">暂无思考链记录</div>');
+    }
+
+    window.render = render;
+    window.renderDaily = renderDaily;
+    window.applyTheme = applyTheme;
+    window.setDailyScope = setDailyScope;
+    window.getDailyState = () => ({ scope: activeDailyScope, selectedDate, weekOffset });
+
+    // Short-lived JSON polling (matching native swarm_board) instead of permanent EventSource:
+    // Antigravity keeps multiple conversation sidecar iframes mounted simultaneously behind
+    // plugin://<authority> -> localhost:<gatewayPort>, where Chromium's 6-socket-per-origin
+    // HTTP/1.1 pool deadlocks if 6 iframes hold never-ending SSE streams open.
+    (function startLiveTelemetryPolling() {
+      if (typeof fetch !== 'function') return;
+      if (typeof location !== 'undefined' && location.protocol === 'file:') return;
+
+      let lastLiveSig = '';
+      let pollInFlight = false;
+      let wasVisible = false;
+      let hasInitialRender = false;
+      let pollTimerId = null;
+
+      function isPaneVisible() {
+        if (typeof document !== 'undefined' && document.hidden) return false;
+        if (typeof window !== 'undefined' && window.innerWidth === 0 && window.innerHeight === 0) return false;
+        return true;
+      }
+
+      function buildFetchOpts(ac) {
+        const opts = { cache: 'no-store' };
+        if (ac) opts.signal = ac.signal;
+        const tok = getSidecarToken();
+        if (tok) opts.headers = { 'X-Sidecar-Token': tok };
+        return opts;
+      }
+
+      async function fetchDailyFallback(ac) {
+        try {
+          const res = await fetch('/api/hud/daily', buildFetchOpts(ac));
+          if (!res.ok) {
+            if (!latestDailyUsage) renderDaily(null);
+            return;
+          }
+          const dailySnap = await res.json();
+          if (dailySnap && typeof dailySnap === 'object') {
+            renderDaily(dailySnap);
+          } else if (!latestDailyUsage) {
+            renderDaily(null);
+          }
+        } catch (_) {
+          if (!latestDailyUsage) renderDaily(null);
+        }
+      }
+
+      async function pollLiveOnce(forceInitial) {
+        if (pollInFlight) return;
+        if (!forceInitial && !isPaneVisible()) return;
+        pollInFlight = true;
+        const ac = typeof AbortController === 'function' ? new AbortController() : null;
+        const timer = ac ? setTimeout(() => ac.abort(), 4000) : null;
+        try {
+          if (convId && !UUID_RE.test(convId)) {
+            hasInitialRender = true;
+            renderEmptySessionState('无效会话 ID · 请从目标会话右侧打开 HUD', '无效会话');
+            await fetchDailyFallback(ac);
+            return;
+          }
+          let url = '/api/hud/live?conversationId=' + encodeURIComponent(convId);
+          if (lastLiveSig) url += '&since=' + encodeURIComponent(lastLiveSig);
+          const res = await fetch(url, buildFetchOpts(ac));
+          if (res.status === 304) return;
+          if (!res.ok) {
+            let errSnap = null;
+            try { errSnap = await res.json(); } catch (_) {}
+            if (errSnap && typeof errSnap === 'object') {
+              hasInitialRender = true;
+              render(errSnap);
+            } else if (forceInitial || !hasInitialRender) {
+              hasInitialRender = true;
+              renderEmptySessionState('实时遥测暂不可用 (HTTP ' + res.status + ')', '连接异常');
+            }
+            if (!latestDailyUsage) await fetchDailyFallback(ac);
+            return;
+          }
+          const snap = await res.json();
+          if (snap && typeof snap === 'object') {
+            if (snap.sig) lastLiveSig = String(snap.sig);
+            hasInitialRender = true;
+            render(snap);
+            if (!snap.dailyUsage && !latestDailyUsage) {
+              await fetchDailyFallback(ac);
+            }
+          }
+        } catch (_) {
+          if (forceInitial || !hasInitialRender) {
+            hasInitialRender = true;
+            renderEmptySessionState('遥测连接失败 · 正在重试', '离线');
+            if (!latestDailyUsage) await fetchDailyFallback(ac);
+          }
+        } finally {
+          if (timer) clearTimeout(timer);
+          pollInFlight = false;
+        }
+      }
+
+      const onVisibilityChange = () => {
+        if (isPaneVisible()) pollLiveOnce(false);
+      };
+      const onResize = () => {
+        const vis = isPaneVisible();
+        if (vis && !wasVisible) {
+          wasVisible = true;
+          pollLiveOnce(false);
+        } else {
+          wasVisible = vis;
+        }
+      };
+
+      function cleanup() {
+        if (pollTimerId !== null) {
+          clearInterval(pollTimerId);
+          pollTimerId = null;
+        }
+        if (typeof document !== 'undefined') {
+          document.removeEventListener('visibilitychange', onVisibilityChange);
+        }
+        if (typeof window !== 'undefined') {
+          window.removeEventListener('resize', onResize);
+          window.removeEventListener('storage', handleThemeStorage);
+          window.removeEventListener('pagehide', cleanup);
+        }
+      }
+
+      function kickOff() {
+        wasVisible = isPaneVisible();
+        if (wasVisible) {
+          pollLiveOnce(true);
+        } else if (!convId || !UUID_RE.test(convId)) {
+          renderEmptySessionState('无效会话 ID · 请从目标会话右侧打开 HUD', '无效会话');
+        }
+        if (pollTimerId === null) {
+          pollTimerId = setInterval(() => {
+            pollLiveOnce(false);
+          }, 1200);
+        }
+      }
+
+      if (typeof document !== 'undefined') {
+        document.addEventListener('visibilitychange', onVisibilityChange);
+      }
+      if (typeof window !== 'undefined') {
+        window.addEventListener('resize', onResize);
+        window.addEventListener('pagehide', cleanup);
+        if (document.readyState === 'complete') {
+          setTimeout(kickOff, 0);
+        } else {
+          window.addEventListener('load', () => setTimeout(kickOff, 0), { once: true });
+        }
+      }
+    })();
+  </script>
+</body>
+</html>

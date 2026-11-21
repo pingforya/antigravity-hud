@@ -1,0 +1,24 @@
+{
+  "name": "agy-hud",
+  "displayName": "Antigravity HUD & Thinking Inspector",
+  "version": "1.0.0",
+  "description": "独立插件模式通过 Hooks 毫秒级计时与 Auxiliary Pane 侧边栏面板提供会话上下文水位、缓存命中率、步骤耗时与完整思考链监控；配合客户端 app.asar 补丁后，可额外在窗口顶部居中胶囊实时显示今日/7日/28日模型 Token 消耗排行，并在输入框底栏内嵌显示上下文水位、生成速率 (tok/s) 与新聊天角色选择器。",
+  "author": "Antigravity Community",
+  "license": "MIT",
+  "keywords": [
+    "antigravity",
+    "hud",
+    "telemetry",
+    "token-usage",
+    "thinking-inspector",
+    "sidecar"
+  ],
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "suggestedPrompts": [
+    "查看当前会话的上下文水位与 Token 速率统计",
+    "分析当前会话哪一步消耗了最多上下文 Token",
+    "检查 HUD 插件运行状态"
+  ]
+}

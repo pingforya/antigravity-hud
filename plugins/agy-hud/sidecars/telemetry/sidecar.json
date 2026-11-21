@@ -1,0 +1,20 @@
+{
+  "command": "node",
+  "args": [
+    "server.mjs"
+  ],
+  "display_name": "HUD 遥测与思考链监控",
+  "description": "实时解析本地会话日志，在侧边栏面板中提供上下文消耗拆解、步骤耗时与完整思考链监控。",
+  "has_web_ui": true,
+  "restart_policy": "always",
+  "ui_config": {
+    "display_name": "HUD 遥测监控",
+    "views": [
+      {
+        "entrypoint": "SIDECAR_UI_ENTRYPOINT_AUX_PANE",
+        "path": "/ui.html",
+        "title": "HUD 遥测与思考链"
+      }
+    ]
+  }
+}

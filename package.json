@@ -1,0 +1,64 @@
+{
+  "name": "antigravity-hud",
+  "version": "1.0.0",
+  "description": "Antigravity consensus HUD status bar (topbar + composer footer), inline chat thinking chain inspector, per-chat persona switcher, and 1M context backend binary patcher",
+  "main": "cli.js",
+  "bin": {
+    "antigravity-hud": "./cli.js"
+  },
+  "files": [
+    "cli.js",
+    "fast-patch.cjs",
+    "unified-patch.cjs",
+    "apply-new-chat-persona.cjs",
+    "bg-sync-i18n.cjs",
+    "paths.cjs",
+    "patch.ps1",
+    "patch.bat",
+    "install.bat",
+    "core/",
+    "plugins/agy-hud/plugin.json",
+    "plugins/agy-hud/hooks.json",
+    "plugins/agy-hud/assets/hakimi.md",
+    "plugins/agy-hud/assets/hakimi-memory.md",
+    "plugins/agy-hud/scripts/",
+    "plugins/agy-hud/sidecars/",
+    "plugins/swarm-zh/",
+    "LICENSE",
+    "README.md"
+  ],
+  "author": "Antigravity Community",
+  "license": "MIT",
+  "keywords": [
+    "antigravity",
+    "hud",
+    "telemetry",
+    "asar-patcher",
+    "electron",
+    "context-limit",
+    "token-tracker"
+  ],
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "scripts": {
+    "test": "node test/verify.js && node --test test/persona-mode.test.cjs test/new-chat-persona.test.cjs test/ui-and-server.test.cjs && node --test test/swarm-zh-patch.test.cjs && node --test test/swarm-translator.test.cjs && node --test test/swarm-ui.test.cjs",
+    "test:ci": "node test/verify.js && node --test test/persona-mode.test.cjs test/new-chat-persona.test.cjs test/ui-and-server.test.cjs && node --test test/swarm-zh-patch.test.cjs",
+    "test:hud": "node test/verify.js && node --test test/persona-mode.test.cjs test/new-chat-persona.test.cjs test/ui-and-server.test.cjs",
+    "test:swarm": "node --test test/swarm-zh-patch.test.cjs && node --test test/swarm-translator.test.cjs && node --test test/swarm-ui.test.cjs",
+    "inspect": "node cli.js inspect",
+    "daily": "node cli.js daily",
+    "install-plugin": "node cli.js install-plugin",
+    "install-all": "node cli.js install",
+    "patch-backend": "node cli.js patch-backend",
+    "restore-backend": "node cli.js restore-backend",
+    "patch-swarm": "node cli.js patch-swarm",
+    "verify-swarm": "node cli.js verify-swarm",
+    "sync-swarm": "node cli.js sync-swarm",
+    "restore-swarm": "node cli.js restore-swarm"
+  },
+  "devDependencies": {
+    "jsdom": "^25.0.0",
+    "@electron/asar": "^3.2.14"
+  }
+}

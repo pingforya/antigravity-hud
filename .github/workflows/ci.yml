@@ -1,0 +1,94 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  test:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ ubuntu-latest, windows-latest ]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: Cross-platform syntax, manifest, inline-HTML & zero-emoji gate
+        run: |
+          node -e "
+            const fs = require('fs');
+            const vm = require('vm');
+            const { spawnSync } = require('child_process');
+            const jsFiles = [
+              'cli.js',
+              'paths.cjs',
+              'fast-patch.cjs',
+              'bg-sync-i18n.cjs',
+              'apply-new-chat-persona.cjs',
+              'unified-patch.cjs',
+              'core/hud-runtime.js',
+              'core/new-chat-persona.js',
+              'core/telemetry-parser.cjs',
+              'core/backend-patcher.cjs',
+              'core/swarm-zh-patch.cjs',
+              'plugins/agy-hud/scripts/hud-hook.cjs',
+              'plugins/agy-hud/scripts/persona-mode.cjs',
+              'plugins/agy-hud/scripts/telemetry-parser.cjs',
+              'plugins/agy-hud/sidecars/telemetry/server.mjs',
+              'test/verify.js',
+              'test/persona-mode.test.cjs',
+              'test/new-chat-persona.test.cjs',
+              'test/ui-and-server.test.cjs'
+            ];
+            for (const f of jsFiles) {
+              const r = spawnSync(process.execPath, ['--check', f], { stdio: 'inherit' });
+              if (r.status !== 0) process.exit(r.status || 1);
+            }
+            for (const jf of [
+              'package.json',
+              'plugins/agy-hud/plugin.json',
+              'plugins/agy-hud/hooks.json',
+              'plugins/agy-hud/sidecars/telemetry/sidecar.json',
+              'plugins/swarm-zh/manifest.json'
+            ]) {
+              JSON.parse(fs.readFileSync(jf, 'utf8'));
+            }
+            const html = fs.readFileSync('plugins/agy-hud/sidecars/telemetry/ui.html', 'utf8');
+            const scripts = [...html.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/gi)];
+            if (scripts.length < 2) throw new Error('Expected script tags in ui.html');
+            scripts.forEach((m, i) => new vm.Script(m[1], { filename: 'ui.html#' + i }));
+            const emojiRe = /[\p{Emoji_Presentation}\p{Extended_Pictographic}\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\u25B6\u25B4\u25BE\uFE0F]/gu;
+            for (const target of [
+              'plugins/agy-hud/sidecars/telemetry/ui.html',
+              'core/hud-runtime.js',
+              'core/new-chat-persona.js',
+              'cli.js',
+              'paths.cjs',
+              'fast-patch.cjs',
+              'unified-patch.cjs',
+              'apply-new-chat-persona.cjs',
+              'bg-sync-i18n.cjs',
+              'core/backend-patcher.cjs',
+              'patch.ps1',
+              'test/verify.js'
+            ]) {
+              const hit = fs.readFileSync(target, 'utf8').match(emojiRe);
+              if (hit) throw new Error('Emoji/pictograph found in ' + target + ': ' + JSON.stringify(hit[0]));
+            }
+            console.log('[OK] Syntax, JSON manifests, ui.html inline scripts & zero-emoji gate passed.');
+          "
+
+      - name: Run CI test suite
+        run: npm run test:ci

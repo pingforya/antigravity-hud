@@ -1,0 +1,13 @@
+node_modules/
+.last_bg_sync.json
+**/__pycache__/
+*.pyc
+*.bak
+*.swap-old
+*.tmp-*
+*.stale-*
+*.lock
+*.log
+plugins/agy-hud/assets/hakimi-memory.local.md
+.DS_Store
+Thumbs.db

@@ -1,0 +1,50 @@
+{
+  "schemaVersion": 1,
+  "plugin": "swarm",
+  "sidecar": "swarm_board",
+  "generatedAt": "2026-11-20T11:26:57.645Z",
+  "files": [
+    {
+      "path": "translator.mjs",
+      "sha256": "71ccf91e7abf5a57d6b5940eba4de98edcd9c097fcabf92ee9ce312fe079729e",
+      "size": 71662,
+      "createdByPatch": true
+    },
+    {
+      "path": "main.mjs",
+      "sha256": "8ea851694406cadceef9508086005d5266df58b90c1879f2702569a192ddf761",
+      "size": 60524,
+      "createdByPatch": false
+    },
+    {
+      "path": "index.html",
+      "sha256": "d218ad2b4d847a9c47d972557b7f8241050e3ac1e42065ee7946151be65c178f",
+      "size": 15576,
+      "createdByPatch": false
+    },
+    {
+      "path": "app.js",
+      "sha256": "1beb9ed1701316aae0a38ef504ace2b769d556a2624a559b8d490e37752a8410",
+      "size": 111160,
+      "createdByPatch": false
+    },
+    {
+      "path": "hive.js",
+      "sha256": "5975aa1980e7fdb163d56b1590190c4cd13494b55b690a3a44a74d4560c6ed02",
+      "size": 98183,
+      "createdByPatch": false
+    },
+    {
+      "path": "narrator_bootstrap.js",
+      "sha256": "ddb7cc990ffc16da01c5150d7188aa6cc327b547fa6a995df0469f2ce2565234",
+      "size": 6583,
+      "createdByPatch": false
+    },
+    {
+      "path": "styles.css",
+      "sha256": "6cbabde4ab1b4845646cf44fdf6c98b893336229e324262f2a705b3035436749",
+      "size": 40706,
+      "createdByPatch": false
+    }
+  ]
+}
